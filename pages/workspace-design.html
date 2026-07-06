@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workspace Design — Fabric Best Practices</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+        <a href="../index.html" class="logo">
+            <div class="logo-icon">DGE</div>
+            <div>
+                <div class="logo-text">Fabric Best Practices</div>
+                <div class="logo-subtitle">Abu Dhabi Government</div>
+            </div>
+        </a>
+        <div class="header-right">
+            <span class="header-badge">UAE Region</span>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <ul class="sidebar-nav">
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Getting Started</div>
+            </li>
+            <li><a href="../index.html" class="sidebar-link">
+                <span class="link-number">⌂</span> Overview
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Platform Setup</div>
+            </li>
+            <li><a href="capacity-planning.html" class="sidebar-link">
+                <span class="link-number">1</span> Capacity & Licensing
+            </a></li>
+            <li><a href="tenant-configuration.html" class="sidebar-link">
+                <span class="link-number">2</span> Tenant Configuration
+            </a></li>
+            <li><a href="workspace-design.html" class="sidebar-link active">
+                <span class="link-number">3</span> Workspace Design
+            </a></li>
+            <li><a href="security-access.html" class="sidebar-link">
+                <span class="link-number">4</span> Security & Access
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Build & Deliver</div>
+            </li>
+            <li><a href="data-architecture.html" class="sidebar-link">
+                <span class="link-number">5</span> Architecture & Naming
+            </a></li>
+            <li><a href="cicd.html" class="sidebar-link">
+                <span class="link-number">6</span> CI/CD & Lifecycle
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Operate</div>
+            </li>
+            <li><a href="#" class="sidebar-link coming-soon">
+                <span class="link-number">7</span> Governance & Compliance
+            </a></li>
+            <li><a href="#" class="sidebar-link coming-soon">
+                <span class="link-number">8</span> Monitoring
+            </a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-content">
+            <div class="page-header">
+                <h1>3. Workspace Design & Organisation</h1>
+                <p class="page-subtitle">How to structure workspaces for billing isolation, workload separation, access management, and CI/CD efficiency.</p>
+            </div>
+
+            <div class="callout callout-info">
+                <div class="callout-title">ℹ Key Reference</div>
+                <div class="callout-body">
+                    This section is informed by <a href="https://medium.com/microsoftazure/thoughts-on-workspace-design-in-microsoft-fabric-f99f79ac6f32" target="_blank">Thoughts on Workspace Design in Microsoft Fabric — Part 1</a> by Nicholas Hurt (Microsoft Customer Success Unit). The patterns described here are field-tested with customers transitioning to Fabric.
+                </div>
+            </div>
+
+            <!-- Why It Matters -->
+            <h2>Why Workspace Design Matters</h2>
+            <p>In Fabric, workspaces are the <strong>primary unit of organisation</strong>. They determine:</p>
+            <ul>
+                <li><strong>Billing isolation</strong> — workspaces are assigned to capacities, which map to Azure subscriptions</li>
+                <li><strong>Workload isolation</strong> — separating heavy Spark jobs from production reports prevents "noisy neighbours"</li>
+                <li><strong>Access control</strong> — workspace roles are the first layer of security</li>
+                <li><strong>CI/CD complexity</strong> — monolithic workspaces with many item types dramatically complicate deployments (see <a href="cicd.html">Section 6</a>)</li>
+            </ul>
+
+            <div class="callout callout-warning">
+                <div class="callout-title">⚡ Key Insight</div>
+                <div class="callout-body">
+                    There is currently no way to apportion a single capacity to different workloads or teams. The recommendation is to <strong>carve up workloads into workspaces that run on separate capacities</strong>, sized according to the workload.
+                </div>
+            </div>
+
+            <!-- Recommended Pattern -->
+            <h2>Recommended Pattern: Core Data Provider & Managed Self-Service BI</h2>
+            <p>This pattern addresses three common requirements for government entities:</p>
+            <ol>
+                <li><strong>Billing & workload isolation</strong> between data engineering and reporting</li>
+                <li><strong>Granular data access management</strong> using SQL permissions and OneLake security roles</li>
+                <li><strong>Managed self-service BI</strong> where a central team curates data and domain teams build reports</li>
+            </ol>
+
+            <h3>High-Level Architecture</h3>
+            <div class="folder-tree">
+<span class="comment">── Data Engineering Capacity (F-SKU) ──────────────────</span>
+│
+├── <span class="folder">DGE-Tourism Insights [Dev]</span>
+│   ├── lh_tourism_bronze
+│   ├── lh_tourism_silver
+│   ├── lh_tourism_gold
+│   ├── pl_ingest_hotel_occupancy
+│   └── nb_transform_tourism_silver
+│
+├── <span class="folder">DGE-Events Analytics [Dev]</span>
+│   ├── lh_events_bronze
+│   ├── lh_events_silver
+│   └── ...
+│
+<span class="comment">── Reporting Capacity (F-SKU) ──────────────────────────</span>
+│
+├── <span class="folder">DGE-Reporting Hub</span>                <span class="comment">← Central, owned by data team</span>
+│   ├── lh_transit_tourism          <span class="comment">← Shortcuts to gold tables</span>
+│   ├── sm_tourism_performance      <span class="comment">← Semantic model</span>
+│   └── rpt_tourism_executive_dashboard
+│
+├── <span class="folder">DGE-Tourism Reports</span>             <span class="comment">← Domain-specific (optional)</span>
+│   ├── sm_tourism_operations
+│   └── rpt_tourism_operations
+│
+└── <span class="folder">DGE-Events Reports</span>              <span class="comment">← Domain-specific (optional)</span>
+    └── ...
+            </div>
+
+            <!-- Billing Isolation -->
+            <h3>1. Billing & Workload Isolation</h3>
+            <p>At least <strong>two Fabric capacities</strong> are required:</p>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Capacity</th>
+                            <th>Workspaces Assigned</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Data Engineering Capacity</strong></td>
+                            <td>Bronze, Silver, Gold workspaces (all environments)</td>
+                            <td>Spark jobs, pipeline execution, data transformation</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Reporting Capacity</strong></td>
+                            <td>Reporting hub, domain report workspaces</td>
+                            <td>Semantic model refresh, Power BI report rendering, user queries</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>Each capacity can be associated with a different Azure subscription for separate invoicing. This ensures business-critical reporting is not affected by demanding data engineering jobs and vice versa.</p>
+
+            <div class="callout callout-info">
+                <div class="callout-title">ℹ OneLake Shortcuts & Billing</div>
+                <div class="callout-body">
+                    When the reporting workspace accesses data from the data engineering workspace via <strong>OneLake shortcuts</strong>, the transaction usage counts against the <em>calling</em> capacity (reporting). The data engineering capacity only pays for storage costs — not for consumption of that data from another capacity.
+                </div>
+            </div>
+
+            <!-- Data Access -->
+            <h3>2. Data Access Management</h3>
+            <p>To provide granular access to specific tables for semantic model development:</p>
+            <ol>
+                <li>Create a <strong>"transit" lakehouse</strong> in the Reporting Hub workspace</li>
+                <li>Create <strong>shortcuts</strong> in the transit lakehouse pointing to required tables in the gold lakehouse</li>
+                <li>The transit lakehouse <strong>owner</strong> should be a member of the data team who has access to gold tables (shortcuts use delegated mode via the lakehouse owner)</li>
+                <li>Share the transit lakehouse to report builders with <strong>Read-only permissions</strong> (no options selected in the share dialog)</li>
+                <li>Grant <strong>SQL SELECT privileges</strong> on specific tables to control what each user/group can access</li>
+            </ol>
+
+            <div class="callout callout-warning">
+                <div class="callout-title">⚡ Important: RLS & Direct Lake</div>
+                <div class="callout-body">
+                    If you implement Row-Level Security (RLS) or Object-Level Security (OLS) in the SQL endpoint, Direct Lake queries will <strong>fall back to DirectQuery</strong>. As an alternative, implement RLS in the semantic model itself to maintain Direct Lake performance.
+                </div>
+            </div>
+
+            <!-- Self-Service BI -->
+            <h3>3. Managed Self-Service BI</h3>
+            <p>In this model:</p>
+            <ul>
+                <li>The <strong>central data team</strong> develops and maintains semantic models in the Reporting Hub</li>
+                <li>Models are <strong>endorsed (Certified)</strong> and made discoverable via the OneLake catalog</li>
+                <li><strong>Domain report creators</strong> are granted Build permissions on the semantic model to create their own reports</li>
+                <li>For "customizable" self-service, share with <strong>Build + Modify</strong> permissions — this allows adding measures/relationships but not new tables</li>
+            </ul>
+
+            <!-- Reporting Workspace Options -->
+            <h2>Reporting Workspace: Single vs. Split</h2>
+            <p>The reporting workspace(s) can be structured in different ways depending on the organisation's size and access requirements:</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Approach</th>
+                            <th>When to Use</th>
+                            <th>Pros</th>
+                            <th>Cons</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Single Reporting Hub</strong></td>
+                            <td>Small–medium entity, few domains, same team manages all reports</td>
+                            <td>Simple to manage, single point of governance</td>
+                            <td>Can become crowded; broad access needed</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Split by Domain/Department</strong></td>
+                            <td>Large entity, multiple departments with distinct data ownership and access</td>
+                            <td>Clear ownership per domain, granular access, independent governance</td>
+                            <td>More workspaces to manage; cross-domain reporting needs planning</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Hub + Spoke</strong></td>
+                            <td>Enterprise-wide semantic models + department-specific reports</td>
+                            <td>Central team controls quality; domains self-serve from certified models</td>
+                            <td>Requires clear endorsement and sharing process</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Recommendation for DGE</h3>
+            <p>For Abu Dhabi government entities with multiple departments (Tourism, Culture, Events, Heritage, etc.), a <strong>Hub + Spoke</strong> approach is recommended:</p>
+            <ul>
+                <li><strong>Hub:</strong> <code>DGE-Reporting Hub</code> — Central transit lakehouses, enterprise semantic models, executive dashboards</li>
+                <li><strong>Spokes:</strong> <code>DGE-Tourism Reports</code>, <code>DGE-Events Reports</code>, etc. — Department-specific models and reports</li>
+            </ul>
+
+            <!-- Workspace Separation by Function -->
+            <h2>Workspace Separation by Function</h2>
+            <p>For optimal CI/CD and workload isolation, separate workspaces by <strong>function</strong> rather than bundling everything together:</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Workspace Category</th>
+                            <th>Contains</th>
+                            <th>Owner</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Ingestion / Bronze</strong></td>
+                            <td>Pipelines, dataflows, bronze lakehouses</td>
+                            <td>Data engineering team</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Transformation / Silver</strong></td>
+                            <td>Notebooks, silver lakehouses</td>
+                            <td>Data engineering team</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Serving / Gold</strong></td>
+                            <td>Gold lakehouse, warehouse, stored procedures</td>
+                            <td>Data engineering / database team</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Reporting Hub</strong></td>
+                            <td>Transit lakehouses (shortcuts), semantic models, enterprise reports</td>
+                            <td>Data/BI team (central)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Domain Reports</strong></td>
+                            <td>Department-specific semantic models and reports</td>
+                            <td>Domain BI developers</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="callout callout-success">
+                <div class="callout-title">✓ Why Granular Workspaces?</div>
+                <div class="callout-body">
+                    <ul style="margin-left:1rem;">
+                        <li>Feature development and deployment affects fewer items</li>
+                        <li>Fewer references to reconfigure during CI/CD</li>
+                        <li>Less chance of complex dependencies causing deployment issues</li>
+                        <li>Workspace security can be applied at a more granular level</li>
+                        <li>Teams can work independently without blocking each other</li>
+                    </ul>
+                    <p style="margin-top:0.5rem;"><em>For detailed CI/CD implications, see <a href="cicd.html">Section 6: CI/CD & Lifecycle</a>.</em></p>
+                </div>
+            </div>
+
+            <!-- Developer Workspaces -->
+            <h2>Isolated Developer Workspaces</h2>
+            <p>For development, each developer gets their own <strong>private workspace</strong> branched from the main development workspace:</p>
+            <ul>
+                <li>Use the <strong>"Branch out to new workspace"</strong> feature in Fabric UI, or automate via the <a href="https://github.com/microsoft/fabric-toolbox/tree/main/accelerators/CICD/Branch-out-to-new-workspace" target="_blank">fabric-toolbox accelerator</a></li>
+                <li>Developer works in isolation — no risk of overwriting other team members' work</li>
+                <li>When ready, submit a <strong>Pull Request</strong> back to the main branch</li>
+                <li>After merge, the developer workspace can be reused by switching to a new branch</li>
+            </ul>
+
+            <div class="callout callout-info">
+                <div class="callout-title">ℹ Workspace Naming for Environments</div>
+                <div class="callout-body">
+                    Follow the DGE naming convention:
+                    <pre style="margin-top:0.5rem;"><code>DGE-Tourism Insights [Dev]     ← Development
+DGE-Tourism Insights [Test]    ← Test/UAT (optional)
+DGE-Tourism Insights           ← Production (no suffix)</code></pre>
+                </div>
+            </div>
+
+            <!-- Domains -->
+            <h2>Fabric Domains</h2>
+            <p>Use <strong>Fabric Domains</strong> to logically group workspaces by business area. This enables:</p>
+            <ul>
+                <li>Filtering content in the OneLake catalog by domain</li>
+                <li>Delegating governance settings to domain admins</li>
+                <li>Clear ownership boundaries</li>
+            </ul>
+
+            <h3>Recommended Domain Structure</h3>
+            <div class="folder-tree">
+<span class="folder">DGE</span>
+ ├── <span class="folder">Tourism</span>
+ ├── <span class="folder">Culture</span>
+ ├── <span class="folder">Events</span>
+ ├── <span class="folder">Heritage</span>
+ ├── <span class="folder">Shared Reference Data</span>
+ └── <span class="folder">Strategy & Performance</span>
+            </div>
+
+            <p>Map each domain to its respective workspaces. A domain admin (department data lead) manages governance within their domain.</p>
+
+        </div>
+    </main>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+    </script>
+</body>
+</html>

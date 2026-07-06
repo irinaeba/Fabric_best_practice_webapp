@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tenant Configuration — Fabric Best Practices</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+        <a href="../index.html" class="logo">
+            <div class="logo-icon">DGE</div>
+            <div>
+                <div class="logo-text">Fabric Best Practices</div>
+                <div class="logo-subtitle">Abu Dhabi Government</div>
+            </div>
+        </a>
+        <div class="header-right">
+            <span class="header-badge">UAE Region</span>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <ul class="sidebar-nav">
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Getting Started</div>
+            </li>
+            <li><a href="../index.html" class="sidebar-link">
+                <span class="link-number">⌂</span> Overview
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Platform Setup</div>
+            </li>
+            <li><a href="capacity-planning.html" class="sidebar-link">
+                <span class="link-number">1</span> Capacity & Licensing
+            </a></li>
+            <li><a href="tenant-configuration.html" class="sidebar-link active">
+                <span class="link-number">2</span> Tenant Configuration
+            </a></li>
+            <li><a href="workspace-design.html" class="sidebar-link">
+                <span class="link-number">3</span> Workspace Design
+            </a></li>
+            <li><a href="security-access.html" class="sidebar-link">
+                <span class="link-number">4</span> Security & Access
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Build & Deliver</div>
+            </li>
+            <li><a href="data-architecture.html" class="sidebar-link">
+                <span class="link-number">5</span> Architecture & Naming
+            </a></li>
+            <li><a href="cicd.html" class="sidebar-link">
+                <span class="link-number">6</span> CI/CD & Lifecycle
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Operate</div>
+            </li>
+            <li><a href="#" class="sidebar-link coming-soon">
+                <span class="link-number">7</span> Governance & Compliance
+            </a></li>
+            <li><a href="#" class="sidebar-link coming-soon">
+                <span class="link-number">8</span> Monitoring
+            </a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-content">
+            <div class="page-header">
+                <h1>2. Tenant Configuration</h1>
+                <p class="page-subtitle">UAE-specific tenant settings, features to disable for data sovereignty, and admin role delegation.</p>
+            </div>
+
+            <!-- Sovereignty Warning -->
+            <div class="callout callout-danger">
+                <div class="callout-title">⚠ Critical: UAE Data Sovereignty</div>
+                <div class="callout-body">
+                    <p>Abu Dhabi government entities are <strong>not permitted to process data outside the UAE</strong>. Several Fabric features route data through Azure OpenAI or third-party services that may process data outside your capacity's geographic region. These must be disabled at the tenant level <strong>before any data is loaded</strong>.</p>
+                    <p style="margin-top:0.5rem;"><strong>Standard Fabric workloads are NOT affected</strong> — Lakehouse, Warehouse, Notebooks, Data Factory pipelines, Semantic Models, OneLake, and Power BI reports all process data within your capacity's region.</p>
+                </div>
+            </div>
+
+            <!-- Features to Disable -->
+            <h2>Features to Disable (Cross-Region Processing)</h2>
+            <p>The following features have been identified as potentially processing or storing data outside the UAE region:</p>
+
+            <h3>AI & Copilot Features</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Feature / Tenant Setting</th>
+                            <th>Risk</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td><strong>Copilot in Fabric / Power BI Copilot</strong><br><code>Users can use Copilot and other features powered by Azure OpenAI</code></td>
+                            <td>Processing occurs outside UAE region via Azure OpenAI</td>
+                            <td><span class="badge badge-disable">DISABLE</span></td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td><strong>Fabric Data Agents</strong><br>Including consumption from Copilot Studio, M365 Copilot, Microsoft Foundry, MCP servers</td>
+                            <td>Responses may be sent outside Fabric's compliance boundary</td>
+                            <td><span class="badge badge-disable">DISABLE</span></td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td><strong>Power BI Q&A</strong></td>
+                            <td>Cross-region processing concern</td>
+                            <td><span class="badge badge-disable">DISABLE</span></td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td><strong>Data sent to Azure OpenAI can be processed outside region</strong><br><code>Data sent to Azure OpenAI can be processed outside your capacity's geographic region, compliance boundary, or national cloud instance</code></td>
+                            <td>Explicit cross-region data processing</td>
+                            <td><span class="badge badge-disable">DISABLE</span></td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td><strong>Data sent to Azure OpenAI can be stored outside region</strong><br><code>Data sent to Azure OpenAI can be stored outside your capacity's geographic region</code></td>
+                            <td>Explicit cross-region data storage</td>
+                            <td><span class="badge badge-disable">DISABLE</span></td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td><strong>Conversation history stored outside region</strong></td>
+                            <td>AI conversation logs stored externally</td>
+                            <td><span class="badge badge-disable">DISABLE</span></td>
+                        </tr>
+                        <tr>
+                            <td>7</td>
+                            <td><strong>Stand-alone Power BI Copilot Experience</strong></td>
+                            <td>Built on the same Azure OpenAI stack</td>
+                            <td><span class="badge badge-disable">DISABLE</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Maps & Visualisation Features</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Feature / Tenant Setting</th>
+                            <th>Risk</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>8</td>
+                            <td><strong>ArcGIS / ESRI Maps</strong></td>
+                            <td>Third-party service processing outside UAE</td>
+                            <td><span class="badge badge-disable">DISABLE</span></td>
+                        </tr>
+                        <tr>
+                            <td>9</td>
+                            <td><strong>Azure Maps Cross-Region Processing</strong><br><code>Data sent to Azure Maps can be processed outside your capacity's geographic region</code></td>
+                            <td>Explicit cross-region processing</td>
+                            <td><span class="badge badge-disable">DISABLE</span></td>
+                        </tr>
+                        <tr>
+                            <td>10</td>
+                            <td><strong>Power BI Custom Visuals (uncertified)</strong></td>
+                            <td>Third-party visuals may send data to external endpoints</td>
+                            <td><span class="badge badge-disable">DISABLE</span> uncertified<br>or <span class="badge badge-review">WHITELIST</span> approved only</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Summary Matrix</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Recommendation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Copilot in Fabric</td><td><span class="badge badge-disable">❌ Disable</span></td></tr>
+                        <tr><td>Power BI Copilot</td><td><span class="badge badge-disable">❌ Disable</span></td></tr>
+                        <tr><td>Fabric Data Agents</td><td><span class="badge badge-disable">❌ Disable</span></td></tr>
+                        <tr><td>Power BI Q&A</td><td><span class="badge badge-disable">❌ Disable</span></td></tr>
+                        <tr><td>Standalone Copilot Experience</td><td><span class="badge badge-disable">❌ Disable</span></td></tr>
+                        <tr><td>Azure OpenAI Processing Outside Region</td><td><span class="badge badge-disable">❌ Disable</span></td></tr>
+                        <tr><td>Azure OpenAI Storage Outside Region</td><td><span class="badge badge-disable">❌ Disable</span></td></tr>
+                        <tr><td>Conversation History Outside Region</td><td><span class="badge badge-disable">❌ Disable</span></td></tr>
+                        <tr><td>Azure Maps Cross-Region Processing</td><td><span class="badge badge-disable">❌ Disable</span></td></tr>
+                        <tr><td>ESRI / ArcGIS Maps</td><td><span class="badge badge-disable">❌ Disable</span></td></tr>
+                        <tr><td>Third-party Custom Visuals</td><td><span class="badge badge-disable">❌ Disable</span> or whitelist only</td></tr>
+                        <tr><td>Data Agent use from Copilot Studio / M365 / Foundry</td><td><span class="badge badge-disable">❌ Disable</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="callout callout-success">
+                <div class="callout-title">✓ Unaffected Workloads</div>
+                <div class="callout-body">
+                    The following Fabric workloads process data <strong>within your capacity's UAE region</strong> and are safe to use:
+                    <ul style="margin-top:0.5rem; margin-left:1rem;">
+                        <li>Lakehouse (Spark, OneLake storage)</li>
+                        <li>Data Warehouse (T-SQL)</li>
+                        <li>Notebooks (Spark compute)</li>
+                        <li>Data Factory Pipelines & Dataflows</li>
+                        <li>Semantic Models (Analysis Services)</li>
+                        <li>Power BI Reports & Dashboards (standard visuals)</li>
+                        <li>Eventstreams & Real-Time Analytics</li>
+                        <li>OneLake storage & shortcuts</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Admin Roles -->
+            <h2>Admin Roles & Delegation</h2>
+            <p>Fabric supports multiple admin levels to distribute responsibility. Do not concentrate all admin rights on a single person.</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Role</th>
+                            <th>Scope</th>
+                            <th>Responsibilities</th>
+                            <th>Typical Government Persona</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Fabric Administrator</strong></td>
+                            <td>Entire tenant</td>
+                            <td>Tenant settings, feature toggles, capacity management, audit logs, user management</td>
+                            <td>IT Director / Head of Digital Infrastructure / Platform Team Lead</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Capacity Administrator</strong></td>
+                            <td>Specific capacity (F-SKU)</td>
+                            <td>Manage capacity settings, assign workspaces to capacity, monitor consumption, scale</td>
+                            <td>Platform Engineer / Cloud Operations Lead</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Domain Administrator</strong></td>
+                            <td>Business domain (e.g., Tourism, Culture)</td>
+                            <td>Override delegated tenant settings for the domain, manage domain-level governance</td>
+                            <td>Department Data Lead / Chief Data Officer (department-level)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Workspace Administrator</strong></td>
+                            <td>Individual workspace</td>
+                            <td>Manage workspace access, assign roles, configure Spark environments, connect to Git</td>
+                            <td>Project Lead / Senior Data Engineer / Analytics Team Lead</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Delegation Best Practices</h3>
+            <ul>
+                <li><strong>Fabric Admin</strong> sets organisation-wide policies (features to disable, security baseline)</li>
+                <li><strong>Capacity Admin</strong> is delegated to the team managing Azure subscriptions and billing</li>
+                <li><strong>Domain Admins</strong> are closer to the business — they understand data sensitivity within their department</li>
+                <li><strong>Workspace Admins</strong> are the team leads who manage day-to-day access for their project members</li>
+            </ul>
+
+            <div class="callout callout-warning">
+                <div class="callout-title">⚡ Principle of Least Privilege</div>
+                <div class="callout-body">
+                    Not every IT staff member needs Fabric Admin rights. Delegate capacity and workspace admin roles to the appropriate team leads. Reserve Fabric Admin for the central platform team (1–3 people maximum).
+                </div>
+            </div>
+
+            <!-- Additional Tenant Settings -->
+            <h2>Additional Tenant Settings to Review</h2>
+            <p>Beyond the sovereignty-critical features above, review these settings for a government environment:</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Setting</th>
+                            <th>Recommendation</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Publish to web</td>
+                            <td><span class="badge badge-disable">DISABLE</span></td>
+                            <td>Prevents public exposure of government data</td>
+                        </tr>
+                        <tr>
+                            <td>External sharing (B2B guest access)</td>
+                            <td><span class="badge badge-disable">DISABLE</span> or restrict to approved domains</td>
+                            <td>Control data leakage outside the organisation</td>
+                        </tr>
+                        <tr>
+                            <td>Export to Excel / CSV / PDF</td>
+                            <td><span class="badge badge-review">REVIEW</span></td>
+                            <td>May need to be restricted based on data classification</td>
+                        </tr>
+                        <tr>
+                            <td>Self-service workspace creation</td>
+                            <td><span class="badge badge-disable">DISABLE</span> for general users</td>
+                            <td>Prevent workspace sprawl; require approval process</td>
+                        </tr>
+                        <tr>
+                            <td>Self-service capacity trials</td>
+                            <td><span class="badge badge-disable">DISABLE</span></td>
+                            <td>Centralise capacity provisioning</td>
+                        </tr>
+                        <tr>
+                            <td>Allow service principals to use Fabric APIs</td>
+                            <td><span class="badge badge-enable">ENABLE</span> for specific security groups</td>
+                            <td>Required for CI/CD automation</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Where to Configure</h3>
+            <p>All tenant settings are managed in the <strong>Fabric Admin Portal</strong>:</p>
+            <ol>
+                <li>Sign in to <a href="https://app.fabric.microsoft.com" target="_blank">app.fabric.microsoft.com</a></li>
+                <li>Click the <strong>Settings gear icon</strong> → <strong>Admin portal</strong></li>
+                <li>Navigate to <strong>Tenant settings</strong></li>
+                <li>Search for each setting listed above and configure accordingly</li>
+            </ol>
+
+        </div>
+    </main>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+    </script>
+</body>
+</html>

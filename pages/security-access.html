@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security & Access Control — Fabric Best Practices</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+        <a href="../index.html" class="logo">
+            <div class="logo-icon">DGE</div>
+            <div>
+                <div class="logo-text">Fabric Best Practices</div>
+                <div class="logo-subtitle">Abu Dhabi Government</div>
+            </div>
+        </a>
+        <div class="header-right">
+            <span class="header-badge">UAE Region</span>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <ul class="sidebar-nav">
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Getting Started</div>
+            </li>
+            <li><a href="../index.html" class="sidebar-link">
+                <span class="link-number">⌂</span> Overview
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Platform Setup</div>
+            </li>
+            <li><a href="capacity-planning.html" class="sidebar-link">
+                <span class="link-number">1</span> Capacity & Licensing
+            </a></li>
+            <li><a href="tenant-configuration.html" class="sidebar-link">
+                <span class="link-number">2</span> Tenant Configuration
+            </a></li>
+            <li><a href="workspace-design.html" class="sidebar-link">
+                <span class="link-number">3</span> Workspace Design
+            </a></li>
+            <li><a href="security-access.html" class="sidebar-link active">
+                <span class="link-number">4</span> Security & Access
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Build & Deliver</div>
+            </li>
+            <li><a href="data-architecture.html" class="sidebar-link">
+                <span class="link-number">5</span> Architecture & Naming
+            </a></li>
+            <li><a href="cicd.html" class="sidebar-link">
+                <span class="link-number">6</span> CI/CD & Lifecycle
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Operate</div>
+            </li>
+            <li><a href="#" class="sidebar-link coming-soon">
+                <span class="link-number">7</span> Governance & Compliance
+            </a></li>
+            <li><a href="#" class="sidebar-link coming-soon">
+                <span class="link-number">8</span> Monitoring
+            </a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-content">
+            <div class="page-header">
+                <h1>4. Security & Access Control</h1>
+                <p class="page-subtitle">Network security, workspace roles, item permissions, OneLake security, service principals, and data gateways.</p>
+            </div>
+
+            <!-- Network Security -->
+            <h2>Network Security</h2>
+            <p>For Abu Dhabi government entities, network controls are a critical layer of defence:</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>What It Does</th>
+                            <th>When to Use</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Microsoft Entra Conditional Access</strong></td>
+                            <td>Restrict access based on IP ranges, MFA, device compliance, location</td>
+                            <td>Always — enforce MFA, block access from non-compliant devices, restrict to UAE-based IPs</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Private Links</strong></td>
+                            <td>Restrict Fabric tenant access to traffic from an Azure VNet only; block all public access</td>
+                            <td>High-security environments where all access must traverse a private network</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Managed Virtual Networks</strong></td>
+                            <td>Dedicated VNet for Fabric Spark workloads; compute clusters isolated in a private network</td>
+                            <td>When Spark notebooks/jobs need to connect to private data sources</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Managed Private Endpoints</strong></td>
+                            <td>Private connections from Fabric to data sources (Azure SQL, ADLS) without public exposure</td>
+                            <td>Connecting to Azure PaaS services that have public access disabled</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="callout callout-danger">
+                <div class="callout-title">⚠ Government Recommendation</div>
+                <div class="callout-body">
+                    At minimum, enable <strong>Conditional Access</strong> with MFA enforcement and IP-based restrictions. For sensitive workloads, combine with <strong>Private Links</strong> to eliminate public internet access to Fabric entirely.
+                </div>
+            </div>
+
+            <!-- Workspace Roles -->
+            <h2>Workspace Roles</h2>
+            <p>Fabric workspaces have four roles: <strong>Admin</strong>, <strong>Member</strong>, <strong>Contributor</strong>, <strong>Viewer</strong>. Always use security groups rather than individual user assignments.</p>
+
+            <h3>Role-to-Persona Mapping</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Persona</th>
+                            <th>Dev Workspace</th>
+                            <th>Test Workspace</th>
+                            <th>Prod Workspace</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Platform admins</strong></td>
+                            <td>Admin</td>
+                            <td>Admin</td>
+                            <td>Admin</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Data engineers</strong></td>
+                            <td>Contributor / Member</td>
+                            <td>Contributor</td>
+                            <td>Viewer or limited Contributor</td>
+                        </tr>
+                        <tr>
+                            <td><strong>BI developers</strong></td>
+                            <td>Contributor</td>
+                            <td>Contributor</td>
+                            <td>Viewer or controlled Contributor</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Business users</strong></td>
+                            <td>Viewer</td>
+                            <td>Viewer / UAT access</td>
+                            <td>Viewer / App audience</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Data stewards</strong></td>
+                            <td>Viewer / Contributor (governance)</td>
+                            <td>Viewer / Contributor</td>
+                            <td>Viewer / Contributor (depending on process)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Service principal</strong></td>
+                            <td>Deployment/automation only</td>
+                            <td>Deployment/automation only</td>
+                            <td>Tightly controlled deployment permissions</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>What Each Role Can Do</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Capability</th>
+                            <th>Admin</th>
+                            <th>Member</th>
+                            <th>Contributor</th>
+                            <th>Viewer</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Update/delete workspace, manage roles</td>
+                            <td>✅</td><td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Add members with lower permissions</td>
+                            <td>✅</td><td>✅</td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Create/modify items (pipelines, notebooks, lakehouses, warehouses)</td>
+                            <td>✅</td><td>✅</td><td>✅</td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Connect workspace to Git</td>
+                            <td>✅</td><td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>View all items, run SQL/DAX queries</td>
+                            <td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+                        </tr>
+                        <tr>
+                            <td>Read data via OneLake APIs / Spark</td>
+                            <td>✅</td><td>✅</td><td>✅</td><td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Item Permissions -->
+            <h2>Item-Level Permissions & Sharing</h2>
+
+            <div class="callout callout-danger">
+                <div class="callout-title">⚠ Critical Misconception to Understand</div>
+                <div class="callout-body">
+                    <p><strong>A user with Viewer access on a workspace can see ALL items in that workspace.</strong></p>
+                    <p>However, if you share a <strong>specific item</strong> (e.g., a report or semantic model) directly with a user who has <strong>NO workspace role</strong>, that user can <strong>ONLY access that specific shared item</strong> — they cannot see or access any other content in the workspace.</p>
+                    <p style="margin-top:0.5rem;">This is a very common misconception. Use item-level sharing when you need to give someone access to a single report without exposing the entire workspace.</p>
+                </div>
+            </div>
+
+            <h3>When to Use Item-Level Sharing</h3>
+            <ul>
+                <li><strong>Business users who need a specific report</strong> — Share the report directly; don't add them to the workspace</li>
+                <li><strong>Cross-department data access</strong> — Share a semantic model with Build permission so another team can create reports from it</li>
+                <li><strong>External stakeholders</strong> (if B2B is enabled) — Share specific items only</li>
+            </ul>
+
+            <h3>Data-Level Security</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Security Type</th>
+                            <th>What It Controls</th>
+                            <th>Where It Applies</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Row-Level Security (RLS)</strong></td>
+                            <td>Which <em>rows</em> a user can see</td>
+                            <td>Semantic models, SQL analytics endpoint, Warehouse</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Column-Level Security (CLS)</strong></td>
+                            <td>Which <em>columns</em> a user can see</td>
+                            <td>SQL analytics endpoint, Warehouse</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Object-Level Security (OLS)</strong></td>
+                            <td>Which <em>tables/objects</em> are visible</td>
+                            <td>Semantic models</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- OneLake Security Roles -->
+            <h2>OneLake Security Roles</h2>
+            <p>OneLake security roles provide <strong>granular folder and table-level access control</strong> within a Lakehouse, independent of workspace roles.</p>
+
+            <h3>What Are OneLake Security Roles?</h3>
+            <ul>
+                <li>They define permissions on <strong>specific folders and tables</strong> within a Lakehouse's OneLake storage</li>
+                <li>You can grant or deny access to individual folders (e.g., <code>/Tables/fact_hotel_occupancy</code>) or file paths</li>
+                <li>They are enforced <strong>across all analytics engines</strong> — SQL, Spark, Power BI all respect the same rules</li>
+                <li>A user may have workspace Contributor role but still be restricted to only certain tables via OneLake security roles</li>
+            </ul>
+
+            <h3>When to Use</h3>
+            <ul>
+                <li>When different teams need access to the <strong>same Lakehouse</strong> but different tables</li>
+                <li>When you need to restrict <strong>Spark/API-level access</strong> (workspace Viewer blocks Spark access entirely, but OneLake roles allow fine-grained control for Contributors)</li>
+                <li>For <strong>data science scenarios</strong> where data scientists need Spark access to specific tables but not the entire lakehouse</li>
+            </ul>
+
+            <div class="callout callout-info">
+                <div class="callout-title">ℹ Learn More</div>
+                <div class="callout-body">
+                    <a href="https://learn.microsoft.com/en-us/fabric/onelake/security/get-started-data-access-roles" target="_blank">Get started with OneLake data access roles</a>
+                </div>
+            </div>
+
+            <!-- Service Principals -->
+            <h2>Service Principals & Managed Identities</h2>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Identity Type</th>
+                            <th>What It Is</th>
+                            <th>When to Use</th>
+                            <th>Common Scenarios</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Service Principal</strong><br>(App Registration)</td>
+                            <td>A non-human identity (client ID + secret/certificate) registered in Entra ID</td>
+                            <td>Automation that runs <em>outside</em> Fabric — CI/CD pipelines, external scripts, DevOps agents</td>
+                            <td>
+                                <ul>
+                                    <li>Deploying artefacts via Fabric REST APIs</li>
+                                    <li>Running deployment pipelines from Azure DevOps</li>
+                                    <li>Automated workspace provisioning</li>
+                                    <li>Programmatic metadata scanning</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Managed Identity</strong><br>(System or User-assigned)</td>
+                            <td>An Azure-managed identity tied to a resource — no secrets to manage</td>
+                            <td>Fabric connecting <em>to</em> other Azure services securely</td>
+                            <td>
+                                <ul>
+                                    <li>Fabric Pipelines accessing Azure Key Vault</li>
+                                    <li>Connecting to ADLS Gen2 with firewall (Trusted Workspace Access)</li>
+                                    <li>Connecting to Azure SQL Database</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Workspace Identity</strong></td>
+                            <td>A Fabric-managed identity specific to a workspace (requires F SKU)</td>
+                            <td>When a workspace needs to access firewall-protected Azure resources</td>
+                            <td>
+                                <ul>
+                                    <li>Trusted workspace access to ADLS Gen2</li>
+                                    <li>Secure outbound connections without gateways</li>
+                                </ul>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="callout callout-warning">
+                <div class="callout-title">⚡ Best Practice</div>
+                <div class="callout-body">
+                    <ul style="margin-left:1rem;">
+                        <li>Use <strong>Service Principals</strong> for CI/CD automation — never use personal accounts for deployments</li>
+                        <li>Use <strong>Managed Identities</strong> whenever connecting to Azure services — they eliminate secret management</li>
+                        <li>Store Service Principal secrets in <strong>Azure Key Vault</strong>, never in code or pipeline variables</li>
+                        <li>Enable "Allow service principals to use Fabric APIs" tenant setting for a <strong>specific security group only</strong></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Data Gateways -->
+            <h2>Data Gateways</h2>
+            <p>Gateways bridge Fabric to data sources that are not publicly accessible or not in Azure.</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Gateway Type</th>
+                            <th>When to Use</th>
+                            <th>How It Works</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>On-Premises Data Gateway</strong></td>
+                            <td>Connecting to data sources inside your corporate network or behind a firewall (on-premises SQL Server, file shares, SAP, Oracle, etc.)</td>
+                            <td>Installed on a VM/server within your network. Acts as a bridge — Fabric sends requests to the gateway, which fetches data locally and returns it.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>VNet Data Gateway</strong></td>
+                            <td>Connecting to Azure PaaS services inside a VNet (Azure SQL, Azure Synapse, Cosmos DB) without an on-premises gateway installation</td>
+                            <td>Microsoft-managed gateway deployed into your VNet. No infrastructure to manage.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>VNet Gateway: Supported Data Sources</h3>
+            <p>VNet data gateways support connections to:</p>
+            <ul>
+                <li>Azure SQL Database / Azure SQL Managed Instance</li>
+                <li>Azure Synapse Analytics</li>
+                <li>Azure Data Lake Storage Gen2 (within a VNet)</li>
+                <li>Azure Cosmos DB</li>
+                <li>Azure Database for PostgreSQL</li>
+                <li>Azure Databricks</li>
+            </ul>
+
+            <div class="callout callout-info">
+                <div class="callout-title">ℹ When VNet Gateway is NOT supported</div>
+                <div class="callout-body">
+                    Use an <strong>On-Premises Data Gateway</strong> for:
+                    <ul style="margin-left:1rem; margin-top:0.5rem;">
+                        <li>On-premises SQL Server, Oracle, SAP</li>
+                        <li>File shares and SFTP</li>
+                        <li>Non-Azure cloud databases (AWS RDS, GCP Cloud SQL)</li>
+                        <li>Any source not available as Azure PaaS</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Key Vault Support for Connections</h3>
+            <p>Azure Key Vault can be used to store credentials for data connections, but support varies:</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Connection Type</th>
+                            <th>Key Vault Supported</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Data Pipeline connections (Data Factory)</td>
+                            <td><span class="badge badge-enable">✓ Yes</span></td>
+                            <td>Use Key Vault linked service for secrets in pipeline activities</td>
+                        </tr>
+                        <tr>
+                            <td>Notebook / Spark connections</td>
+                            <td><span class="badge badge-enable">✓ Yes</span></td>
+                            <td>Access Key Vault via <code>mssparkutils.credentials.getSecret()</code></td>
+                        </tr>
+                        <tr>
+                            <td>Dataflow Gen2 connections</td>
+                            <td><span class="badge badge-disable">✗ Limited</span></td>
+                            <td>Uses built-in connection manager; Key Vault not directly supported</td>
+                        </tr>
+                        <tr>
+                            <td>Semantic Model / Report connections</td>
+                            <td><span class="badge badge-disable">✗ No</span></td>
+                            <td>Use gateway-managed credentials or OAuth/SSO</td>
+                        </tr>
+                        <tr>
+                            <td>On-Premises Gateway connections</td>
+                            <td><span class="badge badge-disable">✗ No</span></td>
+                            <td>Credentials stored encrypted in gateway configuration</td>
+                        </tr>
+                        <tr>
+                            <td>Lakehouse / Warehouse (OneLake)</td>
+                            <td><span class="badge badge-review">N/A</span></td>
+                            <td>Uses Entra ID authentication — no stored credentials needed</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="callout callout-warning">
+                <div class="callout-title">⚡ Recommendation</div>
+                <div class="callout-body">
+                    For government environments: use <strong>Azure Key Vault</strong> wherever supported (Pipelines, Notebooks). For Dataflows and Semantic Models, rely on <strong>OAuth/SSO</strong> or <strong>Managed Identity</strong> authentication to avoid storing credentials. For on-premises gateways, ensure the gateway service account follows your organisation's password rotation policy.
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+    </script>
+</body>
+</html>

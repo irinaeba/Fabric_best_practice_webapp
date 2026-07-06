@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capacity & Licensing — Fabric Best Practices</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+        <a href="../index.html" class="logo">
+            <div class="logo-icon">DGE</div>
+            <div>
+                <div class="logo-text">Fabric Best Practices</div>
+                <div class="logo-subtitle">Abu Dhabi Government</div>
+            </div>
+        </a>
+        <div class="header-right">
+            <span class="header-badge">UAE Region</span>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <ul class="sidebar-nav">
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Getting Started</div>
+            </li>
+            <li><a href="../index.html" class="sidebar-link">
+                <span class="link-number">⌂</span> Overview
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Platform Setup</div>
+            </li>
+            <li><a href="capacity-planning.html" class="sidebar-link active">
+                <span class="link-number">1</span> Capacity & Licensing
+            </a></li>
+            <li><a href="tenant-configuration.html" class="sidebar-link">
+                <span class="link-number">2</span> Tenant Configuration
+            </a></li>
+            <li><a href="workspace-design.html" class="sidebar-link">
+                <span class="link-number">3</span> Workspace Design
+            </a></li>
+            <li><a href="security-access.html" class="sidebar-link">
+                <span class="link-number">4</span> Security & Access
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Build & Deliver</div>
+            </li>
+            <li><a href="data-architecture.html" class="sidebar-link">
+                <span class="link-number">5</span> Architecture & Naming
+            </a></li>
+            <li><a href="cicd.html" class="sidebar-link">
+                <span class="link-number">6</span> CI/CD & Lifecycle
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Operate</div>
+            </li>
+            <li><a href="#" class="sidebar-link coming-soon">
+                <span class="link-number">7</span> Governance & Compliance
+            </a></li>
+            <li><a href="#" class="sidebar-link coming-soon">
+                <span class="link-number">8</span> Monitoring
+            </a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-content">
+            <div class="page-header">
+                <h1>1. Capacity & Licensing Planning</h1>
+                <p class="page-subtitle">Estimate the right SKU, plan your environments, and manage costs effectively.</p>
+            </div>
+
+            <!-- Estimating SKU -->
+            <h2>Estimating the Right SKU Capacity</h2>
+            <p>Choosing the correct Fabric capacity SKU (F2, F4, F8, F16, F32, F64, F128, etc.) depends on the number of concurrent users, workload types, data volume, and refresh frequency.</p>
+
+            <h3>Fabric Capacity Estimator</h3>
+            <p>Microsoft provides the <a href="https://learn.microsoft.com/en-us/fabric/enterprise/licenses#capacity" target="_blank">Fabric Capacity Metrics app</a> to help you understand current consumption and right-size your capacity.</p>
+
+            <div class="callout callout-info">
+                <div class="callout-title">ℹ Enhanced Estimator — Coming Soon</div>
+                <div class="callout-body">
+                    A more detailed capacity estimation tool tailored for Abu Dhabi government workloads is currently in development and will be added to this guide once available. It will factor in typical government data volumes, refresh patterns, and concurrent user loads.
+                </div>
+            </div>
+
+            <h3>Key Factors for SKU Sizing</h3>
+            <ul>
+                <li><strong>Number of workloads:</strong> Data engineering (Spark), data warehousing (SQL), real-time analytics, Power BI reports</li>
+                <li><strong>Concurrency:</strong> How many users/processes run simultaneously during peak hours</li>
+                <li><strong>Data volume:</strong> Total data size and daily incremental loads</li>
+                <li><strong>Refresh frequency:</strong> How often semantic models and pipelines refresh</li>
+                <li><strong>Burst vs. sustained:</strong> Fabric smooths compute usage over time — short bursts are handled well, sustained heavy loads need larger SKUs</li>
+            </ul>
+
+            <div class="callout callout-warning">
+                <div class="callout-title">⚡ Start Small, Scale Up</div>
+                <div class="callout-body">
+                    It is recommended to start with a smaller SKU and monitor consumption using the Capacity Metrics app. You can scale up at any time without downtime.
+                </div>
+            </div>
+
+            <!-- DTAP -->
+            <h2>Environment Strategy (Dev / Prod)</h2>
+            <p>Microsoft recommends a full DTAP approach (Development, Test, Acceptance, Production). However, at minimum, you need <strong>two environments</strong>:</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Environment</th>
+                            <th>Purpose</th>
+                            <th>Who Uses It</th>
+                            <th>Capacity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Development (Dev)</strong></td>
+                            <td>Build, experiment, iterate on data pipelines, notebooks, reports. Break things safely.</td>
+                            <td>Data engineers, BI developers, data scientists</td>
+                            <td>Smaller SKU (e.g., F4–F16). Can be shared across dev teams.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Production (Prod)</strong></td>
+                            <td>Serves business users. Stable, tested, governed. Only deployed artefacts land here.</td>
+                            <td>Business users (consumers), automated pipelines, scheduled refreshes</td>
+                            <td>Sized for production workloads and concurrency (e.g., F32–F128).</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Why Separate Capacities?</h3>
+            <ul>
+                <li><strong>Workload isolation:</strong> A developer running a heavy Spark job should never affect production report performance</li>
+                <li><strong>Billing separation:</strong> Each capacity can be on a different Azure subscription for clear cost attribution</li>
+                <li><strong>Security boundary:</strong> Different access controls per environment</li>
+                <li><strong>Governance:</strong> Only approved artefacts are promoted to production via CI/CD</li>
+            </ul>
+
+            <div class="callout callout-info">
+                <div class="callout-title">ℹ Optional: Test Environment</div>
+                <div class="callout-body">
+                    If resources allow, add a <strong>Test/UAT</strong> environment between Dev and Prod. This is where business users validate changes before production deployment. It should mirror production data volumes and capacity sizing as closely as possible.
+                </div>
+            </div>
+
+            <!-- Cost Management -->
+            <h2>Cost Management & Chargeback</h2>
+            <p>Understanding Fabric billing is critical for government entities that need to allocate costs across departments.</p>
+
+            <h3>How Fabric Billing Works</h3>
+            <ul>
+                <li>Fabric uses <strong>Capacity Units (CUs)</strong> as the universal compute measure</li>
+                <li>All workloads (Spark, SQL, Power BI, Pipelines) consume CUs from the same capacity pool</li>
+                <li>CU consumption is <strong>smoothed over time</strong> — short bursts don't immediately throttle, but sustained overuse does</li>
+                <li>Storage (OneLake) is billed separately at a per-GB rate</li>
+            </ul>
+
+            <h3>Chargeback Strategies</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Strategy</th>
+                            <th>How It Works</th>
+                            <th>Best For</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Separate capacities per department</strong></td>
+                            <td>Each department gets its own F-SKU capacity, billed to their Azure subscription</td>
+                            <td>Large entities with distinct budgets per department</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Shared capacity + Metrics app</strong></td>
+                            <td>Single capacity shared across teams; use Capacity Metrics app to report usage per workspace</td>
+                            <td>Smaller entities or initial rollout phases</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Tags & Azure Cost Management</strong></td>
+                            <td>Tag capacities with department/project metadata; use Azure Cost Management for reporting</td>
+                            <td>Finance teams needing granular cost visibility</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Key Resources</h3>
+            <ul>
+                <li><a href="https://learn.microsoft.com/en-us/fabric/enterprise/licenses" target="_blank">Microsoft Fabric Licenses</a> — Understand capacity vs. per-user licensing</li>
+                <li><a href="https://learn.microsoft.com/en-us/fabric/enterprise/metrics-app" target="_blank">Capacity Metrics App</a> — Monitor and report on CU consumption</li>
+                <li><a href="https://learn.microsoft.com/en-us/fabric/enterprise/azure-billing" target="_blank">Fabric Azure Billing</a> — Understand your invoice</li>
+                <li><a href="https://learn.microsoft.com/en-us/fabric/enterprise/buy-subscription" target="_blank">Buy a Fabric Subscription</a> — Purchase and manage capacity</li>
+            </ul>
+
+        </div>
+    </main>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+    </script>
+</body>
+</html>

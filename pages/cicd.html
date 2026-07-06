@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CI/CD & Lifecycle Management — Fabric Best Practices</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+        <a href="../index.html" class="logo">
+            <div class="logo-icon">DGE</div>
+            <div>
+                <div class="logo-text">Fabric Best Practices</div>
+                <div class="logo-subtitle">Abu Dhabi Government</div>
+            </div>
+        </a>
+        <div class="header-right">
+            <span class="header-badge">UAE Region</span>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <ul class="sidebar-nav">
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Getting Started</div>
+            </li>
+            <li><a href="../index.html" class="sidebar-link">
+                <span class="link-number">⌂</span> Overview
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Platform Setup</div>
+            </li>
+            <li><a href="capacity-planning.html" class="sidebar-link">
+                <span class="link-number">1</span> Capacity & Licensing
+            </a></li>
+            <li><a href="tenant-configuration.html" class="sidebar-link">
+                <span class="link-number">2</span> Tenant Configuration
+            </a></li>
+            <li><a href="workspace-design.html" class="sidebar-link">
+                <span class="link-number">3</span> Workspace Design
+            </a></li>
+            <li><a href="security-access.html" class="sidebar-link">
+                <span class="link-number">4</span> Security & Access
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Build & Deliver</div>
+            </li>
+            <li><a href="data-architecture.html" class="sidebar-link">
+                <span class="link-number">5</span> Architecture & Naming
+            </a></li>
+            <li><a href="cicd.html" class="sidebar-link active">
+                <span class="link-number">6</span> CI/CD & Lifecycle
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Operate</div>
+            </li>
+            <li><a href="#" class="sidebar-link coming-soon">
+                <span class="link-number">7</span> Governance & Compliance
+            </a></li>
+            <li><a href="#" class="sidebar-link coming-soon">
+                <span class="link-number">8</span> Monitoring
+            </a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-content">
+            <div class="page-header">
+                <h1>6. CI/CD & Lifecycle Management</h1>
+                <p class="page-subtitle">How workspace design impacts CI/CD, deployment options, Git integration, and the recommended workflow.</p>
+            </div>
+
+            <div class="callout callout-info">
+                <div class="callout-title">ℹ Key Reference</div>
+                <div class="callout-body">
+                    This section is informed by <a href="https://medium.com/@Nicholas_Hurt/thoughts-on-workspace-design-in-microsoft-fabric-part-3-optimizing-ci-cd-in-microsoft-fabric-a4823a432f62" target="_blank">Thoughts on Workspace Design — Part 3: Optimising for CI/CD</a> by Nicholas Hurt (Microsoft Customer Success Unit), and the official <a href="https://learn.microsoft.com/en-us/fabric/cicd/manage-deployment" target="_blank">Fabric CI/CD documentation</a>.
+                </div>
+            </div>
+
+            <!-- Why Workspace Design Matters -->
+            <h2>Why Workspace Design Impacts CI/CD</h2>
+            <p>The structure of your workspaces directly determines how complex your deployment process will be.</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Monolithic Workspace</th>
+                            <th>Modular Workspace</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>All items (pipelines, notebooks, lakehouses, warehouse, reports) in one workspace</td>
+                            <td>Items separated by function (ingestion, transformation, serving, reporting)</td>
+                        </tr>
+                        <tr>
+                            <td>Branch-out takes longer (more items to sync)</td>
+                            <td>Branch-out is fast (fewer items per workspace)</td>
+                        </tr>
+                        <tr>
+                            <td>Complex dependency chain — pipelines reference lakehouses, notebooks reference warehouses</td>
+                            <td>Minimal cross-references within each workspace</td>
+                        </tr>
+                        <tr>
+                            <td>Higher risk of deployment failures (dependencies out of order)</td>
+                            <td>Deployments affect fewer items, less chance of conflicts</td>
+                        </tr>
+                        <tr>
+                            <td>Developers may accidentally overwrite each other's references</td>
+                            <td>Developers work on isolated, purpose-specific workspaces</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="callout callout-success">
+                <div class="callout-title">✓ Key Takeaway</div>
+                <div class="callout-body">
+                    <strong>A modular workspace design dramatically simplifies CI/CD.</strong> Fewer items = faster branch-out, fewer references to reconfigure, fewer deployment conflicts. This is the design used by Microsoft's own internal teams building data solutions in Fabric.
+                </div>
+            </div>
+
+            <!-- CI/CD Options -->
+            <h2>CI/CD Options in Fabric</h2>
+            <p>Fabric supports three main approaches to deploying content across environments:</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Option</th>
+                            <th>How It Works</th>
+                            <th>Best For</th>
+                            <th>Complexity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Option 1</strong><br>Git-based deployments</td>
+                            <td>Each environment (Dev, Test, Prod) is a workspace connected to a different Git branch. Merging a PR to the target branch auto-syncs the workspace.</td>
+                            <td>Simple setups with few items. Good for reports and semantic models.</td>
+                            <td>Low–Medium</td>
+                        </tr>
+                        <tr class="row-recommended">
+                            <td><strong>Option 2</strong><br>Git + Build environment</td>
+                            <td>Dev workspace connected to Git. A CI/CD pipeline (Azure DevOps / GitHub Actions) reads from Git and deploys to higher environments using Fabric APIs or the <code>fabric-cicd</code> Python library.</td>
+                            <td><strong>Recommended for most scenarios.</strong> Full control, parameterisation, automated testing.</td>
+                            <td>Medium</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Option 3</strong><br>Fabric Deployment Pipelines</td>
+                            <td>Built-in Fabric feature. Deploy content between workspaces (Dev → Test → Prod) with a visual UI. Supports deployment rules for parameter changes.</td>
+                            <td>Teams without DevOps expertise. Quick setup. Good for BI content.</td>
+                            <td>Low</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Recommended Approach -->
+            <h2>Recommended Approach for DGE</h2>
+
+            <h3>For Data Engineering Items (Pipelines, Notebooks, Lakehouses)</h3>
+            <p>Use <strong>Option 2: Git + Build Environment</strong> with the open-source <a href="https://github.com/microsoft/fabric-cicd" target="_blank">fabric-cicd Python library</a>.</p>
+            <ol>
+                <li>Dev workspace connected to Git (Azure DevOps — use a UAE-hosted organisation)</li>
+                <li>Developers branch out to private workspaces for feature work</li>
+                <li>PR to <code>main</code> branch triggers a CI/CD pipeline</li>
+                <li>Pipeline deploys to Prod workspace via Fabric APIs</li>
+            </ol>
+
+            <h3>For Warehouse (T-SQL objects)</h3>
+            <p>Keep the Warehouse in a <strong>separate workspace that is NOT Git-integrated</strong>. Instead:</p>
+            <ol>
+                <li>Version-control the dacpac / SQL project in Git</li>
+                <li>Deploy using <strong>SQLPackage</strong> in a release pipeline</li>
+                <li>This gives full control over schema migrations without Git sync issues</li>
+            </ol>
+
+            <h3>For BI Content (Semantic Models, Reports)</h3>
+            <p><strong>Option 3: Fabric Deployment Pipelines</strong> is suitable for teams without heavy DevOps skills. Alternatively, Option 2 with <code>fabric-cicd</code> for full automation.</p>
+
+            <!-- Git Integration -->
+            <h2>Source Control Platform</h2>
+            <p>The choice of Git platform depends on your organisation's <strong>data classification</strong>. Not all workloads belong in Azure DevOps Services (cloud-hosted).</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data Classification</th>
+                            <th>Recommended Platform</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Public / Internal</td>
+                            <td>Azure DevOps Services (cloud-hosted)</td>
+                        </tr>
+                        <tr>
+                            <td>Confidential Government Data</td>
+                            <td>Assess with DGE governance team</td>
+                        </tr>
+                        <tr class="row-recommended">
+                            <td>Sovereign / Restricted Data</td>
+                            <td>Azure DevOps Server (self-hosted in UAE) or approved sovereign Git platform</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="callout callout-warning">
+                <div class="callout-title">⚠ Abu Dhabi Government RFPs</div>
+                <div class="callout-body">
+                    The safest default position for Abu Dhabi government entities is <strong>Sovereign / Restricted</strong>. Assume this classification unless the governance team explicitly approves a lower tier. This means source control infrastructure should reside in-country (UAE) or on an approved sovereign platform.
+                </div>
+            </div>
+
+            <h2>Git Integration Setup</h2>
+
+            <h3>Prerequisites</h3>
+            <ul>
+                <li>Git platform selected based on data classification (see above)</li>
+                <li>If using Azure DevOps Services — organisation hosted in UAE region</li>
+                <li>If sovereign — Azure DevOps Server deployed on UAE infrastructure</li>
+                <li>Git repository created in Azure Repos</li>
+                <li>Workspace Admin role (only Admins can connect workspaces to Git)</li>
+                <li>Fabric tenant setting: "Users can synchronize workspace items with their Git repositories" → <strong>Enabled</strong></li>
+            </ul>
+
+            <h3>Branching Strategy</h3>
+            <div class="folder-tree">
+<span class="folder">main</span>                    <span class="comment">← Connected to Dev workspace. Always deployable.</span>
+ │
+ ├── <span class="file">feature/add-hotel-pipeline</span>    <span class="comment">← Developer's private workspace</span>
+ ├── <span class="file">feature/update-events-model</span>   <span class="comment">← Another developer</span>
+ └── <span class="file">bugfix/fix-refresh-schedule</span>   <span class="comment">← Hot-fix branch</span>
+            </div>
+
+            <ul>
+                <li><strong><code>main</code></strong> — Source of truth. Connected to the Dev workspace. Always in a deployable state.</li>
+                <li><strong><code>feature/*</code></strong> — Short-lived branches for new work. Developer branches out to their own workspace.</li>
+                <li><strong><code>bugfix/*</code></strong> — Emergency fixes. Same process but expedited review.</li>
+                <li>No direct commits to <code>main</code> — all changes go through <strong>Pull Requests</strong> with review.</li>
+            </ul>
+
+            <!-- Variable Libraries -->
+            <h2>Variable Libraries</h2>
+            <p>Variable libraries solve the problem of <strong>environment-specific configurations</strong> — values that differ between Dev and Prod (connection strings, lakehouse IDs, etc.).</p>
+
+            <h3>What They Replace</h3>
+            <ul>
+                <li>Hardcoded lakehouse/warehouse references in pipelines and notebooks</li>
+                <li>Environment-specific connection strings</li>
+                <li>Deployment rules in deployment pipelines</li>
+            </ul>
+
+            <h3>How They Work</h3>
+            <ul>
+                <li>Define variables once in the workspace's Variable Library</li>
+                <li>Reference variables in pipeline expressions, notebook parameters, queries</li>
+                <li>Each workspace (Dev, Prod) has its own Variable Library with environment-appropriate values</li>
+                <li>When items are deployed, the variable <em>references</em> stay the same — only the values differ per environment</li>
+            </ul>
+
+            <div class="callout callout-info">
+                <div class="callout-title">ℹ Learn More</div>
+                <div class="callout-body">
+                    <a href="https://learn.microsoft.com/en-us/fabric/cicd/variable-library/variable-library-overview" target="_blank">Variable Libraries in Microsoft Fabric</a>
+                </div>
+            </div>
+
+            <!-- Developer Workflow -->
+            <h2>Developer Workflow (Step-by-Step)</h2>
+
+            <h3>1. Start a New Feature</h3>
+            <pre><code>1. Create a new branch from main: feature/add-museum-visits-pipeline
+2. Branch out to a new workspace (Fabric UI or automation script)
+   → This creates: "DGE-Tourism Insights [Dev] - feature/add-museum-visits-pipeline"
+3. Workspace syncs items from the feature branch</code></pre>
+
+            <h3>2. Develop & Test</h3>
+            <pre><code>4. Build your pipeline / notebook / report in the private workspace
+5. Test with dev data
+6. Commit changes to the feature branch (Source Control pane in Fabric)</code></pre>
+
+            <h3>3. Submit for Review</h3>
+            <pre><code>7. Create a Pull Request from feature branch → main
+8. Peer review: code review + functional validation
+9. Resolve any merge conflicts
+10. PR approved and merged → main branch updated</code></pre>
+
+            <h3>4. Deploy to Production</h3>
+            <pre><code>11. CI/CD pipeline triggers (Azure DevOps)
+12. Pipeline reads from main branch
+13. Deploys to Prod workspace via Fabric APIs / fabric-cicd library
+14. Variable Library in Prod resolves environment-specific values
+15. Post-deployment validation runs</code></pre>
+
+            <h3>5. Clean Up</h3>
+            <pre><code>16. Delete the feature branch
+17. Developer reuses their workspace for the next feature
+    (switch branch connection to a new feature branch)</code></pre>
+
+            <!-- Tools & Resources -->
+            <h2>Tools & Resources</h2>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tool</th>
+                            <th>Purpose</th>
+                            <th>Link</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>fabric-cicd</strong> (Python library)</td>
+                            <td>Open-source library for deploying Fabric items programmatically. Used by Microsoft internal teams.</td>
+                            <td><a href="https://github.com/microsoft/fabric-cicd" target="_blank">GitHub</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>fabric-toolbox</strong></td>
+                            <td>Accelerators including "Branch out to new workspace" automation</td>
+                            <td><a href="https://github.com/microsoft/fabric-toolbox" target="_blank">GitHub</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Terraform Provider for Fabric</strong></td>
+                            <td>Infrastructure-as-code for workspace provisioning, capacity management</td>
+                            <td><a href="https://github.com/microsoft/terraform-provider-fabric" target="_blank">GitHub</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Fabric CLI</strong></td>
+                            <td>Command-line interface for Fabric administration</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/admin/fabric-command-line-interface" target="_blank">Docs</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Semantic Link Labs</strong></td>
+                            <td>Python library for Fabric workspace and semantic model management</td>
+                            <td><a href="https://github.com/microsoft/semantic-link-labs" target="_blank">GitHub</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Warehouse CI/CD -->
+            <h2>Special Case: Data Warehouse CI/CD</h2>
+            <div class="callout callout-warning">
+                <div class="callout-title">⚡ Warehouse ≠ Git Integrated</div>
+                <div class="callout-body">
+                    <p>The <code>fabric-cicd</code> library does not currently support publishing Data Warehouse items. The recommended approach:</p>
+                    <ol style="margin-left:1rem; margin-top:0.5rem;">
+                        <li>Keep the Warehouse in a <strong>separate workspace</strong> (not Git-connected)</li>
+                        <li>Use a <strong>SQL Database Project</strong> (.sqlproj) in your Git repo for version control</li>
+                        <li>Deploy schema changes via <strong>SQLPackage</strong> (dacpac) in your Azure DevOps release pipeline</li>
+                        <li>This gives you full migration control, rollback capability, and schema diff</li>
+                    </ol>
+                    <p style="margin-top:0.5rem;">Reference: <a href="https://www.kevinrchant.com/2024/10/22/fabricators-guide-to-database-projects-for-microsoft-fabric-data-warehouses/" target="_blank">Guide to Database Projects for Fabric Data Warehouses</a></p>
+                </div>
+            </div>
+
+            <!-- Summary Diagram -->
+            <h2>End-to-End Flow</h2>
+            <div class="flow-diagram">
+                <div class="flow-stage flow-stage--dev">
+                    <div class="flow-stage__label">Development</div>
+                    <div class="flow-stage__steps">
+                        <span class="flow-step">Developer</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">Branch out</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">Private workspace</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">Develop & Commit</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">Pull Request</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">Code Review</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step flow-step--highlight">Merge to main</span>
+                    </div>
+                </div>
+                <div class="flow-connector">↓</div>
+                <div class="flow-stage flow-stage--cicd">
+                    <div class="flow-stage__label">CI/CD Pipeline <span style="font-weight:400; opacity:0.8;">(Azure DevOps)</span></div>
+                    <div class="flow-stage__steps flow-stage__steps--numbered">
+                        <span class="flow-step">Trigger: merge to main</span>
+                        <span class="flow-step">1. Read items from Git</span>
+                        <span class="flow-step">2. Run validation / tests</span>
+                        <span class="flow-step">3. Deploy via fabric-cicd + SQLPackage</span>
+                        <span class="flow-step">4. Update Variable Library for Prod</span>
+                    </div>
+                </div>
+                <div class="flow-connector">↓</div>
+                <div class="flow-stage flow-stage--prod">
+                    <div class="flow-stage__label">Production</div>
+                    <div class="flow-stage__steps flow-stage__steps--numbered">
+                        <span class="flow-step">Prod workspace receives deployed items</span>
+                        <span class="flow-step">Variable Library resolves prod-specific values</span>
+                        <span class="flow-step">Business users consume reports & dashboards</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+    </script>
+</body>
+</html>

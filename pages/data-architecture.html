@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Architecture & Naming — Fabric Best Practices</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+        <a href="../index.html" class="logo">
+            <div class="logo-icon">DGE</div>
+            <div>
+                <div class="logo-text">Fabric Best Practices</div>
+                <div class="logo-subtitle">Abu Dhabi Government</div>
+            </div>
+        </a>
+        <div class="header-right">
+            <span class="header-badge">UAE Region</span>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <ul class="sidebar-nav">
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Getting Started</div>
+            </li>
+            <li><a href="../index.html" class="sidebar-link">
+                <span class="link-number">⌂</span> Overview
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Platform Setup</div>
+            </li>
+            <li><a href="capacity-planning.html" class="sidebar-link">
+                <span class="link-number">1</span> Capacity & Licensing
+            </a></li>
+            <li><a href="tenant-configuration.html" class="sidebar-link">
+                <span class="link-number">2</span> Tenant Configuration
+            </a></li>
+            <li><a href="workspace-design.html" class="sidebar-link">
+                <span class="link-number">3</span> Workspace Design
+            </a></li>
+            <li><a href="security-access.html" class="sidebar-link">
+                <span class="link-number">4</span> Security & Access
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Build & Deliver</div>
+            </li>
+            <li><a href="data-architecture.html" class="sidebar-link active">
+                <span class="link-number">5</span> Architecture & Naming
+            </a></li>
+            <li><a href="cicd.html" class="sidebar-link">
+                <span class="link-number">6</span> CI/CD & Lifecycle
+            </a></li>
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Operate</div>
+            </li>
+            <li><a href="#" class="sidebar-link coming-soon">
+                <span class="link-number">7</span> Governance & Compliance
+            </a></li>
+            <li><a href="#" class="sidebar-link coming-soon">
+                <span class="link-number">8</span> Monitoring
+            </a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-content">
+            <div class="page-header">
+                <h1>5. Data Architecture & Naming Conventions</h1>
+                <p class="page-subtitle">Lakehouse vs Warehouse, medallion architecture, data formats, and the complete DGE naming standard.</p>
+            </div>
+
+            <!-- Lakehouse vs Warehouse -->
+            <h2>Choosing: Lakehouse vs. Warehouse</h2>
+            <p>Fabric offers both a <strong>Lakehouse</strong> (Spark-based, Delta Lake) and a <strong>Warehouse</strong> (T-SQL, fully managed). They can coexist in the same architecture.</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Criteria</th>
+                            <th>Lakehouse</th>
+                            <th>Warehouse</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Engine</strong></td>
+                            <td>Apache Spark + SQL analytics endpoint (read-only SQL)</td>
+                            <td>Full T-SQL engine (read + write)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Best for</strong></td>
+                            <td>Data engineering, large-scale transformations, data science, semi-structured data</td>
+                            <td>Business logic in stored procedures, complex SQL joins, familiar SQL Server patterns</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Write method</strong></td>
+                            <td>Spark (PySpark, Scala), Dataflows, Pipelines</td>
+                            <td>T-SQL INSERT/UPDATE/DELETE, stored procedures, COPY INTO</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Storage format</strong></td>
+                            <td>Delta Parquet (open format in OneLake)</td>
+                            <td>Delta Parquet (open format in OneLake)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Schema enforcement</strong></td>
+                            <td>Schema-on-read (flexible), Delta schema enforcement optional</td>
+                            <td>Schema-on-write (strict), enforced constraints</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Security model</strong></td>
+                            <td>OneLake security roles + SQL grants on analytics endpoint</td>
+                            <td>Full T-SQL security (GRANT/DENY/REVOKE, RLS, CLS)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CI/CD</strong></td>
+                            <td>Git-integrated (metadata only; data not stored in Git)</td>
+                            <td>Recommend separate workspace, not Git-integrated; deploy via dacpac/SQLPackage</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="callout callout-info">
+                <div class="callout-title">ℹ Common Pattern</div>
+                <div class="callout-body">
+                    Use <strong>Lakehouse for Bronze and Silver layers</strong> (data engineering with Spark), and either a <strong>Lakehouse or Warehouse for Gold</strong> depending on your team's SQL expertise. If using a Warehouse in Gold, create shortcuts in a gold Lakehouse to expose Warehouse tables for OneLake/Spark access.
+                </div>
+            </div>
+
+            <!-- Delta & Iceberg -->
+            <h2>Data Formats: Delta Parquet & Iceberg</h2>
+            <p>All data in OneLake is stored in <strong>open formats</strong> — this prevents vendor lock-in and ensures future interoperability with other government platforms.</p>
+
+            <h3>Delta Lake (Default)</h3>
+            <ul>
+                <li>Default table format for all Fabric Lakehouses and Warehouses</li>
+                <li>Supports ACID transactions, time travel, schema evolution</li>
+                <li>Optimised for both batch and streaming workloads</li>
+                <li>Readable by any tool that supports Parquet + Delta protocol</li>
+            </ul>
+
+            <h3>Apache Iceberg</h3>
+            <ul>
+                <li>Fabric supports Iceberg tables via <strong>metadata virtualisation</strong></li>
+                <li>Iceberg tables can be read as Delta tables across Fabric, and Delta tables can be accessed by Iceberg-compatible services (e.g., Snowflake)</li>
+                <li>Useful when data needs to be shared with non-Microsoft platforms</li>
+            </ul>
+
+            <div class="callout callout-success">
+                <div class="callout-title">✓ Relevance for Abu Dhabi Government</div>
+                <div class="callout-body">
+                    Open formats (Delta/Iceberg) ensure your data is <strong>not locked into a proprietary format</strong>. If policies change or a new platform is adopted, your data remains accessible without costly migration. This aligns with government data sovereignty and interoperability requirements.
+                </div>
+            </div>
+
+            <!-- Medallion Architecture -->
+            <h2>Medallion Architecture (Bronze / Silver / Gold)</h2>
+            <p>The medallion architecture organises data into layers of increasing quality and business readiness:</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Layer</th>
+                            <th>Purpose</th>
+                            <th>Data Format</th>
+                            <th>Who Accesses</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Bronze</strong></td>
+                            <td>Raw ingestion — exact copy of source data. Immutable historical record. Supports re-processing if logic changes.</td>
+                            <td><strong>Delta format recommended</strong> (even for raw data) — enables time travel, schema enforcement, and efficient queries. Raw files (JSON, CSV, Parquet) land in <code>/Files/bronze/</code> before being loaded into Delta tables.</td>
+                            <td>Data engineers only</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Silver</strong></td>
+                            <td>Cleansed, conformed, deduplicated. Standard data types, null handling, business keys applied. This is the "enterprise-ready" layer.</td>
+                            <td>Delta tables. Optimised with Z-ORDER on common filter columns.</td>
+                            <td>Data engineers, data scientists</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Gold</strong></td>
+                            <td>Business-ready, aggregated, modelled (star schema: facts + dimensions). Optimised for reporting and analytics consumption.</td>
+                            <td>Delta tables (Lakehouse) or Warehouse tables. Semantic models built on top.</td>
+                            <td>BI developers, business users (via semantic models/reports)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="callout callout-warning">
+                <div class="callout-title">⚡ Should Bronze Be Delta?</div>
+                <div class="callout-body">
+                    <p><strong>Yes — store Bronze as Delta tables.</strong> While raw files initially land in <code>/Files/bronze/</code> (landing zone), they should be immediately loaded into Delta tables in <code>/Tables/</code>. This provides:</p>
+                    <ul style="margin-left:1rem; margin-top:0.5rem;">
+                        <li>Time travel — reprocess from any point in history</li>
+                        <li>Schema enforcement — catch source schema changes early</li>
+                        <li>Efficient queries — Spark/SQL can query Bronze directly for debugging</li>
+                        <li>VACUUM support — manage storage growth over time</li>
+                    </ul>
+                    <p style="margin-top:0.5rem;">Keep the raw files in <code>/Files/</code> as an archive/landing zone, but your primary Bronze tables should be Delta.</p>
+                </div>
+            </div>
+
+            <!-- Naming Conventions -->
+            <h2>DGE Naming Conventions Standard</h2>
+
+            <div class="callout callout-info">
+                <div class="callout-title">ℹ Global Rules</div>
+                <div class="callout-body">
+                    <strong>Use:</strong> <code>lowercase</code>, <code>snake_case</code>, descriptive names, standard prefixes<br>
+                    <strong>Avoid:</strong> spaces, special characters, <code>Final</code>, <code>Final_v2</code>, <code>New</code>, <code>Test123</code>, <code>MyReport</code><br>
+                    <strong>Environments:</strong> <code>dev</code>, <code>test</code>, <code>prod</code>
+                </div>
+            </div>
+
+            <!-- Design Rationale -->
+            <h3>Convention Design Rationale</h3>
+            <p>All item names follow one of <strong>three structural patterns</strong>, chosen based on what information you need at a glance:</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item Category</th>
+                            <th>Pattern Structure</th>
+                            <th>Why</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Storage items</strong><br>(Lakehouse, Warehouse, KQL DB, Eventhouse)</td>
+                            <td><code>prefix_&lt;domain&gt;_&lt;layer&gt;</code></td>
+                            <td>You need to know: <em>what data domain</em> and <em>what stage in the pipeline</em>. These are "locations" in your architecture.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Processing items</strong><br>(Pipeline, Notebook, Dataflow, Eventstream)</td>
+                            <td><code>prefix_&lt;action&gt;_&lt;target&gt;</code></td>
+                            <td>You need to know: <em>what it does</em> and <em>what it operates on</em>. These are "verbs" that move/transform data.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Consumption items</strong><br>(Semantic Model, Report, App, Data Product, Data Agent)</td>
+                            <td><code>prefix_&lt;domain&gt;_&lt;descriptor&gt;</code></td>
+                            <td>You need to know: <em>which business area</em> and <em>what business concept</em> it serves. These are "outputs" for users.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Workspaces -->
+            <h3>Workspaces</h3>
+            <p><strong>Pattern:</strong> <code>DGE-&lt;Domain or Data Product&gt; [Environment]</code> — Production has no suffix.</p>
+            <details>
+                <summary>Examples</summary>
+                <pre><code>DGE-Tourism Insights [Dev]
+DGE-Tourism Insights [Test]
+DGE-Tourism Insights
+
+DGE-Cultural Assets [Dev]
+DGE-Cultural Assets</code></pre>
+            </details>
+            <p class="text-small text-muted">Do not use: "Workspace", "Fabric", "Power BI", "Final", "New", "Test Workspace"</p>
+
+            <!-- Domains -->
+            <h3>Fabric Domains & Subdomains</h3>
+            <pre><code>DGE
+ ├── Tourism
+ ├── Culture
+ ├── Events
+ ├── Heritage
+ ├── Shared Reference Data
+ └── Strategy & Performance</code></pre>
+
+            <!-- Storage Items -->
+            <h2>Storage Items — <code>prefix_&lt;domain&gt;_&lt;layer&gt;</code></h2>
+            <p>All data containers follow the same pattern. You always know the <strong>business domain</strong> and the <strong>medallion layer</strong>.</p>
+
+            <h3>Lakehouses</h3>
+            <p><strong>Pattern:</strong> <code>lh_&lt;domain&gt;_&lt;layer&gt;</code></p>
+            <details>
+                <summary>Examples</summary>
+                <pre><code>lh_tourism_bronze
+lh_tourism_silver
+lh_tourism_gold
+lh_events_bronze
+lh_events_silver
+lh_events_gold
+lh_shared_reference</code></pre>
+            </details>
+
+            <h3>Warehouses</h3>
+            <p><strong>Pattern:</strong> <code>wh_&lt;domain&gt;_&lt;layer&gt;</code></p>
+            <p class="text-small text-muted">Warehouses almost always serve the gold layer. The layer is still included for consistency with lakehouses — you can search <code>*_gold</code> to find all gold-layer items regardless of type.</p>
+            <details>
+                <summary>Examples</summary>
+                <pre><code>wh_tourism_gold
+wh_events_gold
+wh_strategy_gold</code></pre>
+            </details>
+
+            <h3>Eventhouses</h3>
+            <p><strong>Pattern:</strong> <code>evh_&lt;domain&gt;_&lt;layer&gt;</code></p>
+            <p class="text-small text-muted">For real-time analytics, use <code>realtime</code> as the layer identifier (since medallion layers don't cleanly apply to streaming).</p>
+            <details>
+                <summary>Examples</summary>
+                <pre><code>evh_events_realtime
+evh_tourism_realtime</code></pre>
+            </details>
+
+            <h3>KQL Databases</h3>
+            <p><strong>Pattern:</strong> <code>kqldb_&lt;domain&gt;_&lt;layer&gt;</code></p>
+            <details>
+                <summary>Examples</summary>
+                <pre><code>kqldb_events_bronze
+kqldb_events_silver</code></pre>
+            </details>
+
+            <h3>SQL Databases</h3>
+            <p><strong>Pattern:</strong> <code>sqldb_&lt;domain&gt;_&lt;layer&gt;</code></p>
+            <p class="text-small text-muted">SQL Databases are typically operational (not medallion). Use <code>ops</code> as the layer for operational databases.</p>
+            <details>
+                <summary>Examples</summary>
+                <pre><code>sqldb_tourism_ops
+sqldb_events_ops
+sqldb_shared_reference</code></pre>
+            </details>
+
+            <div class="callout callout-info">
+                <div class="callout-title">ℹ Valid layer values</div>
+                <div class="callout-body">
+                    <code>bronze</code> · <code>silver</code> · <code>gold</code> · <code>realtime</code> · <code>ops</code> · <code>reference</code>
+                </div>
+            </div>
+
+            <!-- Processing Items -->
+            <h2>Processing Items — <code>prefix_&lt;action&gt;_&lt;target&gt;</code></h2>
+            <p>All workload/processing items follow an <strong>action-oriented</strong> pattern. The <code>&lt;target&gt;</code> describes what the item operates on, and its format depends on the action:</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Target describes</th>
+                            <th>Example</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>ingest</code></td><td>The entity being loaded (source data)</td><td><code>pl_ingest_hotel_occupancy</code></td></tr>
+                        <tr><td><code>transform</code></td><td>The destination: <code>&lt;domain&gt;_&lt;layer&gt;</code></td><td><code>nb_transform_tourism_silver</code></td></tr>
+                        <tr><td><code>clean</code></td><td>The destination: <code>&lt;domain&gt;_&lt;layer&gt;</code></td><td><code>nb_clean_events_silver</code></td></tr>
+                        <tr><td><code>validate</code></td><td>What is being checked</td><td><code>pl_validate_tourism_gold</code></td></tr>
+                        <tr><td><code>publish</code></td><td>What is being published</td><td><code>pl_publish_executive_kpis</code></td></tr>
+                        <tr><td><code>refresh</code></td><td>What is being refreshed</td><td><code>pl_refresh_tourism_gold</code></td></tr>
+                        <tr><td><code>archive</code></td><td>What is being archived</td><td><code>pl_archive_events_bronze</code></td></tr>
+                        <tr><td><code>master</code></td><td>The scope of orchestration</td><td><code>pl_master_tourism_daily</code></td></tr>
+                        <tr><td><code>stream</code></td><td>The data being streamed</td><td><code>es_stream_event_attendance</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="callout callout-warning">
+                <div class="callout-title">⚡ Why target format varies by action</div>
+                <div class="callout-body">
+                    <p>This is <strong>intentional, not inconsistent</strong>. An ingest pipeline naturally names its source entity (<em>"I ingest hotel_occupancy"</em>), while a transform notebook names its destination (<em>"I transform data into tourism_silver"</em>). Forcing a rigid structure for all actions would make names less readable.</p>
+                    <p style="margin-top:0.5rem;">The rule: <strong>target = whatever makes the item's purpose obvious at a glance.</strong></p>
+                </div>
+            </div>
+
+            <h3>Data Pipelines</h3>
+            <p><strong>Pattern:</strong> <code>pl_&lt;action&gt;_&lt;target&gt;</code></p>
+            <details>
+                <summary>Examples</summary>
+                <pre><code>pl_ingest_hotel_occupancy
+pl_ingest_museum_visits
+pl_ingest_event_permits
+pl_transform_tourism_silver
+pl_transform_tourism_gold
+pl_validate_tourism_gold
+pl_refresh_events_gold
+pl_archive_events_bronze
+pl_master_tourism_daily</code></pre>
+            </details>
+            <p><strong>Approved actions:</strong> <code>ingest</code> · <code>transform</code> · <code>refresh</code> · <code>publish</code> · <code>validate</code> · <code>archive</code> · <code>master</code></p>
+
+            <h3>Notebooks</h3>
+            <p><strong>Pattern:</strong> <code>nb_&lt;action&gt;_&lt;target&gt;</code></p>
+            <details>
+                <summary>Examples</summary>
+                <pre><code>nb_clean_tourism_silver
+nb_transform_events_gold
+nb_validate_cultural_assets_gold
+nb_generate_dim_date</code></pre>
+            </details>
+
+            <h3>Dataflows Gen2</h3>
+            <p><strong>Pattern:</strong> <code>df_&lt;action&gt;_&lt;target&gt;</code></p>
+            <details>
+                <summary>Examples</summary>
+                <pre><code>df_ingest_visitor_surveys
+df_ingest_event_categories
+df_clean_partner_submissions</code></pre>
+            </details>
+
+            <h3>Eventstreams</h3>
+            <p><strong>Pattern:</strong> <code>es_&lt;action&gt;_&lt;target&gt;</code></p>
+            <p class="text-small text-muted">Eventstreams use <code>stream</code> as the default action. Follows the same processing pattern for discoverability.</p>
+            <details>
+                <summary>Examples</summary>
+                <pre><code>es_stream_event_attendance
+es_stream_visitor_tracking
+es_stream_transport_telemetry</code></pre>
+            </details>
+
+            <h3>KQL Querysets</h3>
+            <p><strong>Pattern:</strong> <code>kql_&lt;action&gt;_&lt;target&gt;</code></p>
+            <p class="text-small text-muted">KQL Querysets use <code>monitor</code>, <code>analyze</code>, or <code>explore</code> as actions.</p>
+            <details>
+                <summary>Examples</summary>
+                <pre><code>kql_monitor_event_operations
+kql_monitor_system_health
+kql_analyze_visitor_patterns</code></pre>
+            </details>
+
+            <!-- Consumption Items -->
+            <h2>Consumption Items — <code>prefix_&lt;domain&gt;_&lt;descriptor&gt;</code></h2>
+            <p>All items consumed by business users follow the same pattern: <strong>domain + a brief descriptor</strong> of the business concept served.</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item Type</th>
+                            <th>Pattern</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Semantic Model</td><td><code>sm_&lt;domain&gt;_&lt;descriptor&gt;</code></td></tr>
+                        <tr><td>Report</td><td><code>rpt_&lt;domain&gt;_&lt;descriptor&gt;</code></td></tr>
+                        <tr><td>Data Product</td><td><code>dp_&lt;domain&gt;_&lt;descriptor&gt;</code></td></tr>
+                        <tr><td>Data Agent</td><td><code>da_&lt;domain&gt;_&lt;descriptor&gt;</code></td></tr>
+                        <tr><td>Shortcut</td><td><code>sc_&lt;source&gt;_&lt;target&gt;</code></td></tr>
+                        <tr><td>Power BI App</td><td><code>DGE &lt;Domain&gt; &lt;Descriptor&gt; App</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <details>
+                <summary>Semantic Model examples</summary>
+                <pre><code>sm_tourism_performance
+sm_events_attendance
+sm_cultural_assets
+sm_strategy_executive_kpis</code></pre>
+            </details>
+
+            <details>
+                <summary>Report examples</summary>
+                <pre><code>rpt_tourism_executive_dashboard
+rpt_events_operations
+rpt_cultural_assets_overview
+rpt_strategy_governance_scorecard</code></pre>
+            </details>
+
+            <details>
+                <summary>Data Product / Data Agent examples</summary>
+                <pre><code>dp_tourism_performance
+dp_events_operations
+dp_cultural_assets
+
+da_tourism_insights
+da_events_support</code></pre>
+            </details>
+
+            <details>
+                <summary>Shortcut examples</summary>
+                <pre><code>sc_adls_tourism_raw
+sc_s3_events_archive
+sc_onelake_shared_reference</code></pre>
+            </details>
+
+            <details>
+                <summary>Power BI App examples</summary>
+                <pre><code>DGE Tourism Insights App
+DGE Events Operations App
+DGE Executive Performance App</code></pre>
+            </details>
+
+            <div class="callout callout-info">
+                <div class="callout-title">ℹ Why Shortcuts differ</div>
+                <div class="callout-body">
+                    Shortcuts use <code>sc_&lt;source&gt;_&lt;target&gt;</code> instead of <code>sc_&lt;domain&gt;_&lt;descriptor&gt;</code> because shortcuts are <strong>references to external or cross-workspace data</strong>. Knowing the <em>source system</em> (adls, s3, onelake) is more useful than the domain when debugging connectivity or access issues.
+                </div>
+            </div>
+
+            <!-- Table Naming -->
+            <h2>Table & Column Naming</h2>
+            <p>Tables use a <strong>type prefix + entity</strong> pattern. The prefix tells you the table's <strong>role in the data model</strong>.</p>
+
+            <div class="callout callout-success">
+                <div class="callout-title">✓ No layer prefixes on tables</div>
+                <div class="callout-body">
+                    <p>Tables in Bronze/Silver lakehouses do <strong>NOT</strong> need <code>br_</code> or <code>sl_</code> prefixes — the layer is already encoded in the lakehouse name (<code>lh_tourism_bronze</code>). Adding a layer prefix to the table is redundant and creates unnecessary refactoring risk if tables are ever moved.</p>
+                    <p style="margin-top:0.5rem;">Use plain entity names in Bronze and Silver. Reserve prefixes for the <strong>Gold layer</strong> where they describe the table's role in the star schema.</p>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Layer</th>
+                            <th>Table Naming</th>
+                            <th>Rationale</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Bronze</strong></td>
+                            <td><code>&lt;entity&gt;</code> — no prefix</td>
+                            <td>Layer is known from <code>lh_*_bronze</code>. Tables mirror source entity names.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Silver</strong></td>
+                            <td><code>&lt;entity&gt;</code> — no prefix</td>
+                            <td>Layer is known from <code>lh_*_silver</code>. Same entity, cleansed.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Gold</strong></td>
+                            <td><code>fact_</code>, <code>dim_</code>, <code>ref_</code>, <code>agg_</code>, <code>vw_</code></td>
+                            <td>Gold tables serve a star schema — the prefix describes the table's <em>role</em> (not its layer).</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Any layer</strong></td>
+                            <td><code>stg_</code>, <code>audit_</code>, <code>ctl_</code></td>
+                            <td>Utility tables that exist for operational purposes, not consumption.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Gold Layer Prefixes</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Table Type</th>
+                            <th>Prefix</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Fact tables</td><td><code>fact_&lt;entity&gt;</code></td></tr>
+                        <tr><td>Dimension tables</td><td><code>dim_&lt;entity&gt;</code></td></tr>
+                        <tr><td>Reference tables</td><td><code>ref_&lt;entity&gt;</code></td></tr>
+                        <tr><td>Aggregate tables</td><td><code>agg_&lt;descriptor&gt;</code></td></tr>
+                        <tr><td>Views</td><td><code>vw_&lt;descriptor&gt;</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Utility Prefixes (any layer)</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Table Type</th>
+                            <th>Prefix</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Staging tables</td><td><code>stg_&lt;entity&gt;</code></td></tr>
+                        <tr><td>Audit tables</td><td><code>audit_&lt;descriptor&gt;</code></td></tr>
+                        <tr><td>Control tables</td><td><code>ctl_&lt;descriptor&gt;</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <details>
+                <summary>Examples</summary>
+                <pre><code>-- Bronze lakehouse (lh_tourism_bronze) — plain entity names
+hotel_occupancy
+museum_visits
+event_permits
+
+-- Silver lakehouse (lh_tourism_silver) — plain entity names
+hotel_occupancy
+event_permits
+visitor_surveys
+
+-- Gold lakehouse/warehouse — star schema prefixes
+fact_hotel_occupancy
+fact_event_attendance
+fact_museum_visits
+dim_hotel
+dim_region
+dim_event
+dim_date
+ref_country
+ref_language
+ref_event_category
+agg_tourism_monthly_kpis
+agg_event_attendance_by_region
+vw_monthly_tourism_kpis
+vw_daily_event_summary
+
+-- Utility tables (can exist in any layer)
+stg_event_permits
+stg_visitor_surveys
+audit_pipeline_runs
+audit_data_quality
+ctl_refresh_history
+ctl_load_status</code></pre>
+            </details>
+
+            <!-- OneLake Folder Structure -->
+            <h3>OneLake Folder Structure</h3>
+            <p><strong>Pattern:</strong></p>
+            <pre><code>/Files/bronze/&lt;source&gt;/&lt;entity&gt;/yyyy/mm/dd/
+/Files/silver/&lt;domain&gt;/&lt;entity&gt;/
+/Files/gold/&lt;data_product&gt;/&lt;entity&gt;/
+/Files/archive/&lt;source&gt;/&lt;entity&gt;/</code></pre>
+            <details>
+                <summary>Examples</summary>
+                <pre><code>/Files/bronze/hotel_system/occupancy/2026/07/06/
+/Files/silver/tourism/hotel_occupancy/
+/Files/gold/tourism_performance/monthly_kpis/
+/Files/archive/events_platform/event_permits/</code></pre>
+            </details>
+
+            <!-- File Naming -->
+            <h3>File Naming</h3>
+            <p><strong>Pattern:</strong> <code>&lt;source&gt;_&lt;entity&gt;_&lt;yyyymmdd&gt;_&lt;runid&gt;.&lt;ext&gt;</code></p>
+            <details>
+                <summary>Examples</summary>
+                <pre><code>hotel_system_occupancy_20260706_001.parquet
+event_platform_permits_20260706_001.json
+visitor_surveys_20260706_001.csv</code></pre>
+            </details>
+
+        </div>
+    </main>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+    </script>
+</body>
+</html>
