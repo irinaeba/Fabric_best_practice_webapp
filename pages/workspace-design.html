@@ -109,34 +109,74 @@
             </ol>
 
             <h3>High-Level Architecture</h3>
-            <div class="folder-tree">
-<span class="comment">── Data Engineering Capacity (F-SKU) ──────────────────</span>
-│
-├── <span class="folder">DGE-Tourism Insights [Dev]</span>
-│   ├── lh_tourism_bronze
-│   ├── lh_tourism_silver
-│   ├── lh_tourism_gold
-│   ├── pl_ingest_hotel_occupancy
-│   └── nb_transform_tourism_silver
-│
-├── <span class="folder">DGE-Events Analytics [Dev]</span>
-│   ├── lh_events_bronze
-│   ├── lh_events_silver
-│   └── ...
-│
-<span class="comment">── Reporting Capacity (F-SKU) ──────────────────────────</span>
-│
-├── <span class="folder">DGE-Reporting Hub</span>                <span class="comment">← Central, owned by data team</span>
-│   ├── lh_transit_tourism          <span class="comment">← Shortcuts to gold tables</span>
-│   ├── sm_tourism_performance      <span class="comment">← Semantic model</span>
-│   └── rpt_tourism_executive_dashboard
-│
-├── <span class="folder">DGE-Tourism Reports</span>             <span class="comment">← Domain-specific (optional)</span>
-│   ├── sm_tourism_operations
-│   └── rpt_tourism_operations
-│
-└── <span class="folder">DGE-Events Reports</span>              <span class="comment">← Domain-specific (optional)</span>
-    └── ...
+            <div class="architecture-diagram">
+                <!-- Data Engineering Capacity -->
+                <div class="arch-capacity arch-capacity--engineering">
+                    <div class="arch-capacity__label">Data Engineering Capacity (F-SKU)</div>
+                    <div class="arch-workspace">
+                        <div class="arch-workspace__label">DGE-Tourism Insights [Dev]</div>
+                        <div class="arch-items">
+                            <div class="arch-item arch-item--lakehouse">lh_tourism_bronze</div>
+                            <div class="arch-arrow">→</div>
+                            <div class="arch-item arch-item--lakehouse">lh_tourism_silver</div>
+                            <div class="arch-arrow">→</div>
+                            <div class="arch-item arch-item--lakehouse">lh_tourism_gold</div>
+                            <div class="arch-arrow">→</div>
+                            <div class="arch-item arch-item--warehouse">wh_tourism_gold</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arch-connector">↓ Shortcuts / SQL Endpoints</div>
+
+                <!-- Reporting Capacity -->
+                <div class="arch-capacity arch-capacity--reporting">
+                    <div class="arch-capacity__label">Reporting Capacity (F-SKU)</div>
+
+                    <!-- Reporting Hub -->
+                    <div class="arch-workspace arch-workspace--hub">
+                        <div class="arch-workspace__label">DGE-Reporting Hub <span class="text-small text-muted">(central, owned by data team)</span></div>
+                        <div class="arch-items">
+                            <div class="arch-item arch-item--semantic">sm_tourism_performance</div>
+                            <div class="arch-arrow">→</div>
+                            <div class="arch-item arch-item--report">rpt_tourism_executive</div>
+                        </div>
+                    </div>
+
+                    <div class="arch-spoke-connector">
+                        <span>↙</span>
+                        <span class="text-small text-muted">Hub distributes to spokes</span>
+                        <span>↘</span>
+                    </div>
+
+                    <!-- Spokes -->
+                    <div class="arch-spokes">
+                        <div class="arch-workspace arch-workspace--spoke">
+                            <div class="arch-workspace__label">DGE-Tourism Reports</div>
+                            <div class="arch-items">
+                                <div class="arch-item arch-item--semantic">sm_tourism_ops</div>
+                                <div class="arch-arrow">→</div>
+                                <div class="arch-item arch-item--report">rpt_tourism_ops</div>
+                            </div>
+                        </div>
+                        <div class="arch-workspace arch-workspace--spoke">
+                            <div class="arch-workspace__label">DGE-Events Reports</div>
+                            <div class="arch-items">
+                                <div class="arch-item arch-item--semantic">sm_events_ops</div>
+                                <div class="arch-arrow">→</div>
+                                <div class="arch-item arch-item--report">rpt_events_ops</div>
+                            </div>
+                        </div>
+                        <div class="arch-workspace arch-workspace--spoke">
+                            <div class="arch-workspace__label">DGE-Cultural Reports</div>
+                            <div class="arch-items">
+                                <div class="arch-item arch-item--semantic">sm_cultural_assets</div>
+                                <div class="arch-arrow">→</div>
+                                <div class="arch-item arch-item--report">rpt_cultural_overview</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Billing Isolation -->

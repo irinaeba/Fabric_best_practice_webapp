@@ -80,7 +80,7 @@
             <p>Choosing the correct Fabric capacity SKU (F2, F4, F8, F16, F32, F64, F128, etc.) depends on the number of concurrent users, workload types, data volume, and refresh frequency.</p>
 
             <h3>Fabric Capacity Estimator</h3>
-            <p>Microsoft provides the <a href="https://learn.microsoft.com/en-us/fabric/enterprise/licenses#capacity" target="_blank">Fabric Capacity Metrics app</a> to help you understand current consumption and right-size your capacity.</p>
+            <p>Microsoft provides the <a href="https://www.microsoft.com/en-us/microsoft-fabric/capacity-estimator" target="_blank">Fabric Capacity Estimator</a> to help you estimate the right SKU based on workload types, data volumes, and concurrency requirements.</p>
 
             <div class="callout callout-info">
                 <div class="callout-title">ℹ Enhanced Estimator — Coming Soon</div>
@@ -163,6 +163,399 @@
                 <li>Storage (OneLake) is billed separately at a per-GB rate</li>
             </ul>
 
+            <h3>CU Consumption by Workload</h3>
+            <p>The table below details how each Fabric workload type consumes Capacity Units. Use this to anticipate which workloads will drive the most consumption in your environment.</p>
+
+            <details>
+                <summary>Simulated Scenario: Full Environment Sizing on F32 Capacity</summary>
+                <p>This example models a <strong>realistic mixed-workload environment</strong> on an F32 capacity (32 CUs/hour = 768 CU-hours/day) to illustrate how consumption adds up across workloads.</p>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Workload</th>
+                                <th>Assumptions</th>
+                                <th>Calculation</th>
+                                <th>% of F32</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Power BI</strong> (Semantic Model Refresh)</td>
+                                <td>Max 3 GB model in-memory. 7.5 GB needed during refresh (2.5× factor). Assumed to utilise full 32 CUs during the 1h refresh window.</td>
+                                <td>32 CU-hours/day</td>
+                                <td><strong>4%</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Data Factory</strong> (Dataflow Gen2)</td>
+                                <td>2h daily Dataflow Gen2 transformations.</td>
+                                <td>16 CU/sec × 2h × 3600 / 3600 = 32 CU-hours/day</td>
+                                <td><strong>4%</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Data Factory</strong> (Copy Activity)</td>
+                                <td>10 copy activities/day, total duration ~1h.</td>
+                                <td>1h × 32 CU = 32 CU-hours/day</td>
+                                <td><strong>4%</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Spark Notebooks</strong></td>
+                                <td>2h daily (scheduled jobs, ETL, engineering). Medium pool: 2 nodes, 16 vCores = 8 CU-hours.</td>
+                                <td>8 CU-hours × 2h = 16 CU-hours/day</td>
+                                <td><strong>2%</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Data Science</strong> (Training, Scoring)</td>
+                                <td>1–2h daily bursty Spark (model training, experimentation, batch inference). XL pool: 2 nodes, 64 vCores = 32 CU-hours.</td>
+                                <td>32 CU-hours × 2h = 64 CU-hours/day</td>
+                                <td><strong>8%</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Data Warehouse</strong></td>
+                                <td>Gold layer 200–500 GB. 2 analysts × 2h/day moderate queries. 16 vCores = 32 CU-hours.</td>
+                                <td>32 CU-hours × 4h = 128 CU-hours/day</td>
+                                <td><strong>16%</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Eventstream</strong></td>
+                                <td>1 GB/day ingestion, 2 sources, 1 destination (lakehouse), no derived streams.</td>
+                                <td>Traffic: 1 GB × 0.342 = 0.342 + Flat: 0.222 × 24 = 5.33 → ~5.6 CU-hours/day</td>
+                                <td><strong>1%</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong>ML Model Serving</strong></td>
+                                <td>1 model, 1 active endpoint, constant low traffic. 1 node running continuously.</td>
+                                <td>5 CU-seconds × 3600 = 5 CU-hours/hour × 24 = 120 CU-hours/day</td>
+                                <td><strong>15%</strong></td>
+                            </tr>
+                            <tr style="font-weight: 700; background: var(--bg-alt);">
+                                <td>Total</td>
+                                <td></td>
+                                <td></td>
+                                <td><strong>~54%</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout callout-success">
+                    <div class="callout-title">✓ Sizing Verdict</div>
+                    <div class="callout-body">
+                        <p>This simulated environment consumes approximately <strong>54% of an F32 capacity</strong>, leaving headroom for peak bursts, ad-hoc queries, and growth. An F32 is viable for this workload profile.</p>
+                        <p style="margin-top:0.5rem;">Key considerations:</p>
+                        <ul style="margin-left:1rem;">
+                            <li>The 2.5× memory factor means the <strong>semantic model size</strong> (not just CU consumption) determines the minimum SKU — a 3 GB model needs 7.5 GB memory, which fits within F32's 10 GB per-model limit.</li>
+                            <li>If the semantic model grows beyond 4 GB compressed, you'll need <strong>F64</strong> (25 GB memory limit) regardless of CU utilisation.</li>
+                            <li>The <strong>ML serving endpoint</strong> runs 24/7 — consider whether this can be scaled down during off-hours.</li>
+                        </ul>
+                    </div>
+                </div>
+            </details>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Workload</th>
+                            <th>Operation</th>
+                            <th>Description</th>
+                            <th>CU Impact</th>
+                            <th>Documentation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Power BI</strong></td>
+                            <td>Semantic Model Refresh</td>
+                            <td>Imports data, processes partitions, recalculates measures. One of the highest PBI consumers — large models and many partitions increase usage.
+                                <br><a href="#" class="popup-trigger" data-popup="popup-memory-limits">📋 Memory limits per SKU</a>
+                            </td>
+                            <td>★★★★</td>
+                            <td><a href="#" class="popup-trigger" data-popup="popup-memory-factor">⚠ 2.5× memory factor</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Power BI</strong></td>
+                            <td>Report Queries</td>
+                            <td>Interactive viewing, filtering, drill-through, DAX execution. Lower than refreshes but scales with user concurrency and query complexity.</td>
+                            <td>★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/enterprise/fabric-operations" target="_blank">Fabric Operations</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Power BI</strong></td>
+                            <td>Direct Lake Queries</td>
+                            <td>Queries against Direct Lake models. Higher than cached interactions, lower than full refresh operations.</td>
+                            <td>★★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/enterprise/fabric-operations" target="_blank">Fabric Operations</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Power BI</strong></td>
+                            <td>XMLA Operations</td>
+                            <td>Model scripting, metadata updates, Tabular Editor activity. Low and bursty.</td>
+                            <td>★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/enterprise/fabric-operations" target="_blank">Fabric Operations</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Data Engineering (Spark)</strong></td>
+                            <td>Notebook Execution & Data Transformation</td>
+                            <td>PySpark, Scala, Spark SQL, joins, aggregations, Delta optimisations. All use the same Spark pool — among the largest CU consumers.</td>
+                            <td>★★★★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/data-engineering/spark-compute#spark-pools" target="_blank">Spark Compute</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Data Engineering (Spark)</strong></td>
+                            <td>Lakehouse Load & Write</td>
+                            <td>Ingestion, write-back to Delta tables, compaction. Medium to High depending on volume.</td>
+                            <td>★★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/onelake/onelake-consumption" target="_blank">OneLake Consumption</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Data Science</strong></td>
+                            <td>Model Training</td>
+                            <td>ML model training on Spark infrastructure. Often ranks among the largest consumers.</td>
+                            <td>★★★★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/enterprise/fabric-operations" target="_blank">Fabric Operations</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Data Science</strong></td>
+                            <td>Model Scoring</td>
+                            <td>Batch inference and prediction. Usually lower than training workloads.</td>
+                            <td>★★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/enterprise/fabric-operations" target="_blank">Fabric Operations</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Data Warehouse</strong></td>
+                            <td>Warehouse Queries</td>
+                            <td>T-SQL execution. 1 Warehouse core = 2 Fabric CUs. Often the largest warehouse consumer.</td>
+                            <td>★★★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/data-warehouse/usage-reporting#capacity-in-fabric-data-warehouse" target="_blank">DW Billing & Utilization</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Data Warehouse</strong></td>
+                            <td>Data Loading</td>
+                            <td>COPY INTO, CTAS, ELT processing. High for large data loads.</td>
+                            <td>★★★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/data-warehouse/usage-reporting#capacity-in-fabric-data-warehouse" target="_blank">DW Billing & Utilization</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Data Warehouse</strong></td>
+                            <td>SQL Analytics Endpoint</td>
+                            <td>Queries against Lakehouse SQL endpoint. Moderate to High with concurrency.</td>
+                            <td>★★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/data-warehouse/usage-reporting#capacity-in-fabric-data-warehouse" target="_blank">DW Billing & Utilization</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>SQL Database</strong></td>
+                            <td>Query Execution</td>
+                            <td>CRUD operations. 1 Fabric CU ≈ 0.383 SQL DB vCores. Moderate to High.</td>
+                            <td>★★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/enterprise/fabric-operations" target="_blank">Fabric Operations</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>SQL Database</strong></td>
+                            <td>Index / System Operations</td>
+                            <td>Background maintenance and metadata operations. Generally low.</td>
+                            <td>★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/enterprise/fabric-operations" target="_blank">Fabric Operations</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Data Factory</strong></td>
+                            <td>Copy Activity (Data Movement)</td>
+                            <td>Moving data between sources/targets. Usually the largest Data Factory consumer.</td>
+                            <td>★★★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/data-factory/pricing-copy-job#pricing-model" target="_blank">Copy Job Pricing</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Data Factory</strong></td>
+                            <td>Pipeline Orchestration</td>
+                            <td>Scheduling and dependency handling. Lower than data movement.</td>
+                            <td>★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/data-factory/pricing-pipelines#price-model" target="_blank">Pipeline Pricing</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Real-Time Intelligence</strong></td>
+                            <td>Eventstream Ingestion</td>
+                            <td>Continuous streaming data ingestion. High if event volume is large.</td>
+                            <td>★★★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/real-time-intelligence/event-streams/monitor-capacity-consumption" target="_blank">Eventstream Capacity</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Real-Time Intelligence</strong></td>
+                            <td>Event Processing</td>
+                            <td>Stream transformations, routing, enrichment. Medium to High per throughput.</td>
+                            <td>★★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/real-time-intelligence/event-streams/monitor-capacity-consumption" target="_blank">Eventstream Capacity</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>KQL Database / Eventhouse</strong></td>
+                            <td>Data Ingestion</td>
+                            <td>Telemetry and streaming ingestion. High for large volumes.</td>
+                            <td>★★★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/real-time-intelligence/pricing-cost-drivers" target="_blank">Eventhouse Cost per GB</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>KQL Database / Eventhouse</strong></td>
+                            <td>KQL Queries</td>
+                            <td>Interactive and analytical queries. Moderate, query-dependent.</td>
+                            <td>★★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/real-time-intelligence/pricing-cost-drivers" target="_blank">Eventhouse Cost per GB</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>AI / Copilot</strong></td>
+                            <td>Copilot Generation</td>
+                            <td>AI prompts, code generation, summaries. Dedicated Copilot meter. Bursty and request-driven.</td>
+                            <td>★★</td>
+                            <td><a href="https://learn.microsoft.com/en-us/fabric/enterprise/azure-billing" target="_blank">Azure Billing for Fabric</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Popup: Memory Limits per SKU -->
+            <div class="popup-overlay" id="popup-memory-limits">
+                <div class="popup-content">
+                    <button class="popup-close" aria-label="Close">&times;</button>
+                    <h4>Semantic Model Memory Limits per SKU</h4>
+                    <p>Each SKU enforces a <strong>max memory per semantic model</strong> during refresh. This is a <em>per-model</em> limit — not cumulative across all models on the capacity.</p>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>SKU</th><th>CUs</th><th>Max Memory / Model (GB)</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>F2</td><td>2</td><td>3</td></tr>
+                                <tr><td>F4</td><td>4</td><td>3</td></tr>
+                                <tr><td>F8</td><td>8</td><td>3</td></tr>
+                                <tr><td>F16</td><td>16</td><td>5</td></tr>
+                                <tr><td>F32</td><td>32</td><td>10</td></tr>
+                                <tr><td>F64</td><td>64</td><td>25</td></tr>
+                                <tr><td>F128</td><td>128</td><td>50</td></tr>
+                                <tr><td>F256</td><td>256</td><td>100</td></tr>
+                                <tr><td>F512</td><td>512</td><td>200</td></tr>
+                                <tr><td>F1024</td><td>1024</td><td>400</td></tr>
+                                <tr><td>F2048</td><td>2048</td><td>400</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <details>
+                        <summary>Simulated Example: 10 GB Semantic Model Refresh</summary>
+                        <p>Model compressed size: <strong>10 GB</strong> × 2.5 = <strong>25 GB required</strong></p>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead><tr><th>SKU</th><th>Max Memory</th><th>Sufficient?</th></tr></thead>
+                                <tbody>
+                                    <tr><td>F32</td><td>10 GB</td><td>❌ Cannot hold refresh + queries</td></tr>
+                                    <tr class="row-recommended"><td>F64</td><td>25 GB</td><td>✓ Minimum viable</td></tr>
+                                    <tr><td>F128</td><td>50 GB</td><td>✓ Comfortable headroom</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <!-- Popup: 2.5× Memory Factor -->
+            <div class="popup-overlay" id="popup-memory-factor">
+                <div class="popup-content">
+                    <button class="popup-close" aria-label="Close">&times;</button>
+                    <h4>⚠ 2.5× Memory Factor During Refresh</h4>
+                    <p>During refresh, the capacity must hold <strong>both the current model (serving queries) and the new copy being processed</strong>. With indexing and compression overhead, you need approximately <strong>2.5× the model's compressed size</strong> in available memory.</p>
+                    <p>Your model's refresh footprint (size × 2.5) must fit within the SKU's per-model memory limit.</p>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>Factor</th><th>Value</th></tr></thead>
+                            <tbody>
+                                <tr><td>Current model in memory (serving queries)</td><td>1×</td></tr>
+                                <tr><td>New copy being processed</td><td>1×</td></tr>
+                                <tr><td>Indexing, compression overhead</td><td>~0.5×</td></tr>
+                                <tr style="font-weight:700; background:var(--bg-alt);"><td>Total required</td><td>≈ 2.5×</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <details>
+                <summary>Simulated Example: Eventstream + KQL DB on F64 Capacity</summary>
+                <h4>Eventstream CU Consumption Rates</h4>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Operation in Capacity Metrics App</th>
+                                <th>Description</th>
+                                <th>Unit</th>
+                                <th>Consumption Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Eventstream Per Hour</td>
+                                <td>Flat charge</td>
+                                <td>Per hour</td>
+                                <td>0.222 CU hours</td>
+                            </tr>
+                            <tr>
+                                <td>Eventstream Data Traffic Per GB</td>
+                                <td>Data ingress and egress volume in default and derived streams (includes 24-hour retention)</td>
+                                <td>Per gigabyte</td>
+                                <td>0.342 CU hours</td>
+                            </tr>
+                            <tr>
+                                <td>Eventstream Processor Per Hour</td>
+                                <td>Computing resources that the processor consumes</td>
+                                <td>Per hour</td>
+                                <td>Starts at 0.778 CU hours and autoscales per throughput</td>
+                            </tr>
+                            <tr>
+                                <td>Eventstream Connectors Per vCore Hour</td>
+                                <td>Computing resources that the connectors consume</td>
+                                <td>Per hour</td>
+                                <td>0.611 CU hours per vCore</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4>Scenario: F64 Capacity with 39 GB/h Throughput</h4>
+                <p><strong>F64 capacity = 64 CUs per hour → 720h × 64 = 46,080 CU-hours/month</strong></p>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Component</th>
+                                <th>Rate</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Eventstream Flat Charge</td><td>0.222 CU/hour</td><td>0.222</td></tr>
+                            <tr><td>Data Traffic (Ingress/Egress)</td><td>0.342 CU per GB</td><td>0.342 × 39 = 13.338</td></tr>
+                            <tr><td>Eventstream Processor</td><td>0.778 CU/hour</td><td>0.778</td></tr>
+                            <tr><td>Connectors</td><td>0.611 CU per vCore-hour</td><td>0.611</td></tr>
+                            <tr><td>1 KQL DB × 8 vCores</td><td>8 CU/hour</td><td>8.000</td></tr>
+                            <tr style="font-weight: 700; background: var(--bg-alt);"><td>Hourly Total</td><td></td><td>≈ 23 CU-hours</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout callout-info">
+                    <div class="callout-title">Monthly Impact</div>
+                    <div class="callout-body">
+                        <p><strong>23 CU-hours × 720h = 16,560 CU-hours/month</strong></p>
+                        <p>This represents <strong>~35% of F64 capacity</strong> consumed by a single Eventstream + KQL DB workload.</p>
+                    </div>
+                </div>
+            </details>
+
+            <div class="callout callout-warning">
+                <div class="callout-title">⚠ Note on Consumption Values</div>
+                <div class="callout-body">
+                    The "Relative Consumption" column provides directional guidance — actual CU usage varies significantly based on data volumes, concurrency, query complexity, and Spark cluster configuration. Use the <a href="https://learn.microsoft.com/en-us/fabric/enterprise/metrics-app" target="_blank">Capacity Metrics App</a> to measure real consumption in your environment.
+                </div>
+            </div>
+
             <h3>Chargeback Strategies</h3>
             <div class="table-wrapper">
                 <table>
@@ -208,6 +601,29 @@
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
         }
+
+        // Popup triggers
+        document.querySelectorAll('.popup-trigger').forEach(trigger => {
+            trigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                const popupId = this.getAttribute('data-popup');
+                const popup = document.getElementById(popupId);
+                if (popup) popup.classList.add('active');
+            });
+        });
+
+        // Close popup on overlay click or close button
+        document.querySelectorAll('.popup-overlay').forEach(overlay => {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === this) this.classList.remove('active');
+            });
+        });
+
+        document.querySelectorAll('.popup-close').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.closest('.popup-overlay').classList.remove('active');
+            });
+        });
     </script>
 </body>
 </html>
