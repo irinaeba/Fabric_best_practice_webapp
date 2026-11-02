@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Microsoft Fabric Permissions Guide</title>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("scoutTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --cp-bg: #f6f7fb;
+      --cp-bg-elevated: #ffffff;
+      --cp-surface: #ffffff;
+      --cp-surface-soft: #f2f5fb;
+      --cp-border: #dfe5ef;
+      --cp-border-strong: #9aa8bd;
+      --cp-text: #172033;
+      --cp-text-muted: #5f6f89;
+      --cp-text-soft: #74839a;
+      --cp-accent: #7c3aed;
+      --cp-accent-hover: #6d28d9;
+      --cp-accent-soft: rgba(124, 58, 237, 0.1);
+      --cp-accent-fg: #ffffff;
+      --cp-success: #16a34a;
+      --cp-danger: #dc2626;
+      --cp-warning: #f59e0b;
+      --cp-link: #2563eb;
+      --cp-shadow: 0 24px 70px rgba(29, 45, 78, 0.14);
+      --cp-shadow-soft: 0 12px 34px rgba(29, 45, 78, 0.1);
+      --cp-overlay: rgba(255, 255, 255, 0.8);
+      --cp-panel: rgba(255, 255, 255, 0.78);
+      --cp-panel-strong: rgba(255, 255, 255, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.55);
+      --cp-highlight: rgba(124, 58, 237, 0.14);
+      --cp-focus: rgba(124, 58, 237, 0.55);
+      --cp-gradient: linear-gradient(135deg, #6d28d9 0%, #1d4ed8 58%, #0f766e 100%);
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --cp-bg: #0b1020;
+      --cp-bg-elevated: #111827;
+      --cp-surface: #121a2b;
+      --cp-surface-soft: #172033;
+      --cp-border: #26334a;
+      --cp-border-strong: #475569;
+      --cp-text: #eef3ff;
+      --cp-text-muted: #a8b3c7;
+      --cp-text-soft: #c7d2e5;
+      --cp-accent: #a78bfa;
+      --cp-accent-hover: #c4b5fd;
+      --cp-accent-soft: rgba(167, 139, 250, 0.16);
+      --cp-accent-fg: #101525;
+      --cp-success: #4ade80;
+      --cp-danger: #f87171;
+      --cp-warning: #fbbf24;
+      --cp-link: #93c5fd;
+      --cp-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+      --cp-shadow-soft: 0 12px 34px rgba(0, 0, 0, 0.3);
+      --cp-overlay: rgba(17, 24, 39, 0.88);
+      --cp-panel: rgba(18, 26, 43, 0.76);
+      --cp-panel-strong: rgba(18, 26, 43, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.04);
+      --cp-highlight: rgba(167, 139, 250, 0.18);
+      --cp-focus: rgba(167, 139, 250, 0.72);
+      --cp-gradient: linear-gradient(135deg, #a78bfa 0%, #60a5fa 56%, #2dd4bf 100%);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(124, 58, 237, 0.18), transparent 36rem),
+        radial-gradient(circle at top right, rgba(6, 182, 212, 0.14), transparent 34rem),
+        var(--cp-bg);
+      color: var(--cp-text);
+      font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+      letter-spacing: 0;
+    }
+    header { position: relative; overflow: hidden; border-bottom: 1px solid var(--cp-border); }
+    header::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.36));
+      pointer-events: none;
+    }
+    html[data-theme="dark"] header::before { background: linear-gradient(135deg, rgba(17, 24, 39, 0.8), rgba(17, 24, 39, 0.2)); }
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+    header .wrap { position: relative; padding: 46px 0 34px; }
+    main.wrap { padding: 24px 0 56px; }
+    .hero { max-width: 920px; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--cp-accent); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; }
+    .eyebrow::before { content: ""; width: 9px; height: 9px; border-radius: 999px; background: var(--cp-gradient); box-shadow: 0 0 0 6px var(--cp-accent-soft); }
+    h1 { max-width: 820px; margin: 10px 0 12px; font-size: clamp(36px, 6vw, 68px); line-height: 0.96; letter-spacing: -0.045em; }
+    h2 { margin: 0 0 12px; font-size: 22px; }
+    h3 { margin: 0 0 8px; font-size: 16px; }
+    p, li { line-height: 1.55; }
+    .subtitle { max-width: 850px; margin: 0; color: var(--cp-text-muted); font-size: 18px; line-height: 1.55; }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .pill { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid var(--cp-border); border-radius: 999px; background: var(--cp-panel); color: var(--cp-text-muted); font-size: 12px; font-weight: 750; backdrop-filter: blur(16px); }
+    .pill strong { color: var(--cp-text); }
+    .tabs { position: sticky; top: 10px; z-index: 5; display: grid; grid-template-columns: repeat(3, minmax(max-content, 1fr)); gap: 8px; overflow-x: auto; margin-bottom: 24px; padding: 8px; border: 1px solid var(--cp-border); border-radius: 22px; background: var(--cp-panel-strong); box-shadow: var(--cp-shadow-soft); backdrop-filter: blur(18px); }
+    .tab {
+      appearance: none;
+      border: 1px solid transparent;
+      border-radius: 16px;
+      padding: 13px 15px;
+      background: transparent;
+      color: var(--cp-text-muted);
+      font: inherit;
+      font-weight: 760;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: transform 160ms ease, background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    }
+    .tab:hover { color: var(--cp-accent-hover); transform: translateY(-1px); }
+    .tab[aria-selected="true"] { color: var(--cp-accent-fg); border-color: transparent; background: var(--cp-gradient); box-shadow: 0 12px 28px rgba(124, 58, 237, 0.24); }
+    .panel[hidden] { display: none; }
+    .panel { animation: panelIn 180ms ease; }
+    @keyframes panelIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .subtabs { display: inline-grid; grid-auto-flow: column; gap: 8px; padding: 6px; margin: 4px 0 22px; border: 1px solid var(--cp-border); border-radius: 999px; background: var(--cp-panel); box-shadow: inset 0 1px 0 var(--cp-sheen); backdrop-filter: blur(12px); }
+    .subtab { appearance: none; border: 1px solid transparent; border-radius: 999px; padding: 11px 18px; background: transparent; color: var(--cp-text-muted); font: inherit; font-weight: 760; cursor: pointer; transition: transform 160ms ease, box-shadow 160ms ease, color 160ms ease, background-color 160ms ease; }
+    .subtab:hover { color: var(--cp-accent-hover); transform: translateY(-1px); }
+    .subtab[aria-selected="true"] { background: var(--cp-surface); color: var(--cp-accent); box-shadow: var(--cp-shadow-soft); border-color: var(--cp-border); }
+    .access-panel[hidden], .control-panel[hidden] { display: none; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .card {
+      min-width: 0;
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-border);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 6px 18px rgba(29, 45, 78, 0.06);
+    }
+    .card.accent { border-top: 4px solid var(--cp-accent); }
+    .card.success { border-top: 4px solid var(--cp-success); }
+    .card.warning { border-top: 4px solid var(--cp-warning); }
+    .sub-block { padding: 16px 0; border-top: 1px solid var(--cp-border); }
+    .sub-block:first-of-type { padding-top: 8px; border-top: 0; }
+    details.sub-block summary { color: var(--cp-text); font-size: 16px; font-weight: 700; cursor: pointer; }
+    details.sub-block summary::marker { color: var(--cp-accent); }
+    details.sub-block[open] summary { margin-bottom: 12px; }
+    .warehouse-card { display: flex; flex-direction: column; font-size: 14px; }
+    .warehouse-card h2 { font-size: 20px; margin-bottom: 10px; }
+    .warehouse-card h3, .warehouse-card details.sub-block summary { font-size: 14px; }
+    .warehouse-card p, .warehouse-card li { line-height: 1.4; }
+    .warehouse-card .sub-block { padding: 12px 0; }
+    .warehouse-card .steps { margin: 8px 0; }
+    .warehouse-card .steps li { padding: 0 0 10px 34px; }
+    .warehouse-card .steps li::before { width: 24px; height: 24px; font-size: 12px; }
+    .warehouse-card pre { margin: 10px 0; padding: 11px 12px; font-size: 12px; line-height: 1.4; }
+    .warehouse-card .callout { margin: 10px 0; padding: 11px 12px; }
+    .warehouse-card .integration-block { margin-top: auto; }
+    .warehouse-card .button-link { padding: 8px 10px; font-size: 13px; }
+    .muted { color: var(--cp-text-muted); }
+    .info-pane { padding: 18px 20px; border: 1px solid var(--cp-border); border-radius: 20px; background: var(--cp-surface-soft); color: var(--cp-text); }
+    details.info-pane summary { color: var(--cp-text); font-size: 17px; font-weight: 800; cursor: pointer; }
+    details.info-pane summary::marker { color: var(--cp-accent); }
+    details.info-pane[open] summary { margin-bottom: 12px; }
+    .diagnostic-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+    .diagnostic-fact { padding: 12px; border: 1px solid var(--cp-border); border-radius: 14px; background: var(--cp-surface); }
+    .info-pane p { margin: 8px 0; }
+    .info-pane p:last-child { margin-bottom: 0; }
+    .callout { padding: 15px 17px; margin: 14px 0; border: 1px solid var(--cp-border); border-left: 5px solid var(--cp-accent); border-radius: 16px; background: var(--cp-accent-soft); line-height: 1.5; }
+    .callout.success { border-left-color: var(--cp-success); background: var(--cp-surface-soft); }
+    .callout.warning { border-left-color: var(--cp-warning); background: var(--cp-surface-soft); }
+    .callout.critical { border: 2px solid var(--cp-danger); border-left-width: 8px; background: var(--cp-surface); }
+    .callout.critical.danger-fill { background: var(--cp-highlight); }
+    .callout.critical strong { color: var(--cp-danger); }
+    .flow { display: flex; gap: 8px; align-items: stretch; margin: 14px 0; }
+    .node { flex: 1; min-width: 0; padding: 13px; border: 1px solid var(--cp-border); border-radius: 16px; background: var(--cp-surface-soft); font-size: 13px; }
+    .node strong { display: block; color: var(--cp-accent); margin-bottom: 4px; }
+    .arrow { align-self: center; color: var(--cp-accent); font-weight: 800; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--cp-border); border-radius: 18px; }
+    table { width: 100%; border-collapse: collapse; background: var(--cp-surface); }
+    th, td { padding: 11px 12px; border-bottom: 1px solid var(--cp-border); text-align: left; vertical-align: top; font-size: 13px; }
+    th { background: var(--cp-surface-soft); color: var(--cp-text-muted); text-transform: uppercase; font-size: 11px; }
+    tr:last-child td { border-bottom: 0; }
+    .yes { color: var(--cp-success); font-weight: 700; }
+    .no { color: var(--cp-danger); font-weight: 700; }
+    .conditional { color: var(--cp-warning); font-weight: 700; }
+    code, pre { font-family: Consolas, "Courier New", Courier, monospace; }
+    pre { overflow-x: auto; padding: 14px; border: 1px solid var(--cp-border); border-radius: 0.625rem; background: var(--cp-surface-soft); color: var(--cp-text); font-size: 13px; line-height: 1.55; }
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+    .steps li { position: relative; padding: 0 0 16px 42px; }
+    .steps li::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 0; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--cp-accent); color: var(--cp-accent-fg); font-weight: 700; }
+    a { color: var(--cp-link); }
+    .source-list { display: grid; gap: 8px; }
+    .source { padding: 12px 14px; border: 1px solid var(--cp-border); border-radius: 0.625rem; background: var(--cp-surface); }
+    .source a { font-weight: 650; }
+    .source span { display: block; margin-top: 3px; color: var(--cp-text-muted); font-size: 12px; }
+    .button-link { display: inline-block; padding: 9px 12px; border-radius: 999px; background: var(--cp-accent); color: var(--cp-accent-fg); text-decoration: none; font-weight: 760; }
+    .simulator { margin-top: 4px; }
+    .simulator > h2 { margin-bottom: 6px; }
+    .simulator > .muted { max-width: 760px; margin: 0 0 20px; }
+    .simulator-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+    fieldset { min-width: 0; margin: 0; padding: 22px; border: 1px solid var(--cp-border); border-radius: 22px; background: var(--cp-surface); box-shadow: 0 6px 18px rgba(29, 45, 78, 0.06); }
+    legend { float: left; width: 100%; margin: 0 0 16px; padding: 0 0 12px; border-bottom: 1px solid var(--cp-border); color: var(--cp-accent); font-size: 15px; font-weight: 700; }
+    .field { margin-top: 18px; }
+    fieldset > .field:first-of-type { clear: both; margin-top: 0; }
+    .field-label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 700; }
+    select { width: 100%; min-height: 46px; padding: 10px 36px 10px 12px; border: 1px solid var(--cp-border-strong); border-radius: 0.625rem; background: var(--cp-surface); color: var(--cp-text); font: inherit; }
+    select:disabled { border-color: var(--cp-border); background: var(--cp-surface-soft); color: var(--cp-text-muted); cursor: not-allowed; opacity: 0.8; }
+    select:focus-visible, .choice:has(input:focus-visible), .tab:focus-visible, .subtab:focus-visible, .button-link:focus-visible, .simulate-button:focus-visible { outline: 3px solid var(--cp-focus); outline-offset: 3px; border-color: var(--cp-accent); }
+    .choices { display: grid; gap: 8px; }
+    .choice { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start; min-height: 66px; padding: 12px 13px; border: 1px solid var(--cp-border); border-radius: 16px; background: var(--cp-surface-soft); cursor: pointer; transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease; }
+    .choice:hover { border-color: var(--cp-border-strong); }
+    .choice:hover { transform: translateY(-1px); }
+    .choice:has(input:checked) { border-color: var(--cp-accent); background: var(--cp-accent-soft); }
+    .choice input { width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--cp-accent); }
+    .choice span { min-width: 0; line-height: 1.35; }
+    .choice small { display: block; color: var(--cp-text-muted); margin-top: 2px; }
+    .field-disclaimer { margin: 7px 0 0; color: var(--cp-danger); font-size: 12px; font-style: italic; line-height: 1.4; }
+    .conditional-field[hidden] { display: none; }
+    .simulate-row { display: flex; gap: 14px; align-items: center; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--cp-border); }
+    .simulate-button { min-height: 46px; border: 0; border-radius: 999px; padding: 12px 20px; background: var(--cp-gradient); color: var(--cp-accent-fg); font: inherit; font-weight: 800; cursor: pointer; box-shadow: 0 12px 28px rgba(124, 58, 237, 0.24); }
+    .simulate-button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .form-status { color: var(--cp-text-muted); font-size: 13px; }
+    .simulation-result { margin-top: 18px; padding: 20px; border: 1px solid var(--cp-border); border-top: 5px solid var(--cp-accent); border-radius: 24px; background: var(--cp-surface); box-shadow: var(--cp-shadow); }
+    .simulation-result[hidden] { display: none; }
+    .result-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .result-item { padding: 12px; border: 1px solid var(--cp-border); border-radius: 0.625rem; background: var(--cp-surface-soft); }
+    .result-item strong { display: block; margin-bottom: 5px; color: var(--cp-accent); }
+    .result-item.success { border-left: 5px solid var(--cp-success); }
+    .result-item.success strong { color: var(--cp-success); }
+    .result-item.danger { border-left: 5px solid var(--cp-danger); }
+    .result-item.danger strong { color: var(--cp-danger); }
+    .result-item.warning { border-left: 5px solid var(--cp-warning); }
+    .result-item.warning strong { color: var(--cp-warning); }
+    .result-notes { display: grid; gap: 8px; margin-bottom: 0; padding-left: 0; list-style: none; }
+    .result-notes li { padding: 9px 11px; border-left: 5px solid var(--cp-border-strong); background: var(--cp-surface-soft); }
+    .result-notes li.success { border-left-color: var(--cp-success); }
+    .result-notes li.danger { border-left-color: var(--cp-danger); }
+    .result-notes li.warning { border-left-color: var(--cp-warning); }
+    .section-gap { margin-top: 18px; }
+    footer { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--cp-border); color: var(--cp-text-muted); font-size: 12px; }
+    @media (max-width: 760px) {
+      header .wrap { padding-top: 34px; }
+      .tabs { top: 8px; grid-template-columns: max-content max-content max-content; padding: 6px; border-radius: 18px; box-shadow: 0 8px 22px rgba(29, 45, 78, 0.1); }
+      .tab { padding: 11px 13px; }
+      .subtabs { display: grid; grid-auto-flow: row; border-radius: 20px; width: 100%; }
+      .subtab { width: 100%; }
+      .diagnostic-facts { grid-template-columns: minmax(0, 1fr); }
+      .grid-2, .grid-3, .simulator-grid, .result-grid { grid-template-columns: minmax(0, 1fr); }
+      fieldset { padding: 16px; }
+      .simulate-row { align-items: stretch; flex-direction: column; }
+      .simulate-button { width: 100%; }
+      .flow { flex-direction: column; }
+      .arrow { transform: rotate(90deg); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="hero">
+        <div class="eyebrow">Microsoft Fabric security</div>
+        <h1>Choose the right Fabric access path</h1>
+        <p class="subtitle">A practical guide for service principals that separates workspace and item access from OneLake roles, SQL grants, runtime networking, and endpoint authentication.</p>
+        <div class="pill-row" aria-label="Key guide topics">
+          <span class="pill"><strong>ABFS</strong> HTTPS 443</span>
+          <span class="pill"><strong>SQL</strong> TDS 1433</span>
+          <span class="pill"><strong>Auth</strong> Entra service principal</span>
+          <span class="pill"><strong>Least privilege</strong> scoped data grants</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <nav class="tabs" role="tablist" aria-label="Permission guide sections">
+      <button class="tab" role="tab" id="tab-matrix" aria-controls="matrix" aria-selected="true">Simulator</button>
+      <button class="tab" role="tab" id="tab-roles" aria-controls="roles" aria-selected="false">Roles &amp; grants</button>
+      <button class="tab" role="tab" id="tab-data-access" aria-controls="data-access" aria-selected="false">ABFS vs SQL paths</button>
+    </nav>
+
+    <section class="panel" id="roles" role="tabpanel" aria-labelledby="tab-roles" hidden>
+      <div class="callout"><strong>Two permission planes:</strong> workspace roles and item permissions control which artifacts a principal can reach; OneLake roles or SQL permissions control which data it can read. Workspace roles cross both planes because they include default item and data permissions.</div>
+      <nav class="subtabs" role="tablist" aria-label="Control plane permission types">
+        <button class="subtab" role="tab" id="subtab-workspace-roles" aria-controls="control-workspace-roles" aria-selected="true">Workspace roles</button>
+        <button class="subtab" role="tab" id="subtab-item-permissions" aria-controls="control-item-permissions" aria-selected="false">Item-level permissions</button>
+      </nav>
+
+      <section class="control-panel" id="control-workspace-roles" role="tabpanel" aria-labelledby="subtab-workspace-roles">
+        <div class="callout critical"><strong>Critical: workspace roles can override granular access.</strong> Fabric effective permissions are additive. A broad workspace role carries default data permissions that a narrower item permission, OneLake role, or SQL <code>GRANT</code> cannot take away. Always check workspace membership first when a principal can see or read more than expected.</div>
+        <h2>All four workspace roles</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Role</th><th>Workspace and item capabilities</th><th>SQL data access automatically granted by the workspace role</th><th>OneLake data access automatically granted by the workspace role</th><th>Best fit</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Admin</strong></td><td>Manages the workspace, access, settings, and all items</td><td><code>CONTROL</code> on every Warehouse and SQL endpoint</td><td>Broad read/write access</td><td>Workspace ownership and administration</td></tr>
+              <tr><td><strong>Member</strong></td><td>Creates and modifies items and can manage access below Admin</td><td><code>CONTROL</code> on every Warehouse and SQL endpoint</td><td>Broad read/write access</td><td>Workspace management and development</td></tr>
+              <tr><td><strong>Contributor</strong></td><td>Creates and modifies content but doesn't manage workspace membership</td><td><code>CONTROL</code> on every Warehouse and SQL endpoint</td><td>Broad read/write access</td><td>Content authors and engineers</td></tr>
+              <tr><td><strong>Viewer</strong></td><td>Can discover and open every item in the workspace</td><td><code>CONNECT + ReadData</code>; broad table/view reads when delegated SQL authorization applies</td><td>No <code>ReadAll</code> by default; OneLake roles can scope Lakehouse access</td><td>Workspace-wide read-only visibility</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted">For the granular Microsoft Fabric capability matrix by workspace role, see <a href="https://learn.microsoft.com/en-us/fabric/fundamentals/roles-workspaces#microsoft-fabric-workspace-roles">Microsoft Learn: Microsoft Fabric workspace roles</a>.</p>
+        <div class="callout warning"><strong>Viewer is not Read + ReadAll:</strong> Viewer receives <strong>Read + ReadData</strong>. This enables broad delegated SQL reads, but not direct ABFS access. Lakehouse SQL User identity mode evaluates OneLake security instead.</div>
+        <div class="callout warning"><strong>Least-privilege action:</strong> Admin, Member, and Contributor inherit SQL <code>CONTROL</code> and OneLake write access, so granular grants cannot narrow their access. Remove workspace-role membership first, then share only the required item through item-level permissions.</div>
+      </section>
+
+      <section class="control-panel" id="control-item-permissions" role="tabpanel" aria-labelledby="subtab-item-permissions" hidden>
+        <h2>Item-level permissions</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Permission</th><th>Control-plane effect</th><th>SQL data access granted by the item permission</th><th>OneLake data access granted by the item permission</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Read</strong></td><td>Discover and open only the shared item. <strong>Least-privilege best practice:</strong> assign no workspace role, share only the required item, grant item <code>Read</code>, then add only the data permission required by the selected access path.</td><td>Includes the equivalent of SQL <code>CONNECT</code>; no table data by itself</td><td>No table or file data by itself</td></tr>
+              <tr><td><strong>ReadData</strong></td><td>Requires <code>Read</code> access for item discovery first</td><td>Reads all tables/views when delegated SQL authorization applies; equivalent to <code>db_datareader</code> for Warehouse</td><td>No direct OneLake access; redundant in Lakehouse User identity mode</td></tr>
+              <tr><td><strong>ReadAll</strong></td><td>Requires <code>Read</code> access for item discovery first</td><td>No delegated SQL authorization</td><td>Adds the principal to <code>DefaultReader</code> for broad item reads through OneLake/ABFS and Lakehouse User identity mode</td></tr>
+              <tr><td><strong>Write</strong></td><td>Modify the item and its content where supported</td><td>Broad inherited SQL access</td><td>Broad read/write data access; narrower OneLake roles cannot reduce it</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout warning"><strong>ReadData and ReadAll are independent:</strong> ReadData governs delegated SQL reads. ReadAll governs OneLake access through <code>DefaultReader</code>. Neither converts into the other, and both are broader than a schema/table-specific grant.</div>
+        <h2 class="section-gap">Least-privilege data grant after item Read</h2>
+        <div class="grid-2">
+          <article class="card accent">
+            <h3>Lakehouse</h3>
+            <p>Add a scoped OneLake security role for direct ABFS or SQL User identity mode. For SQL Delegated mode, add granular SQL permissions instead.</p>
+          </article>
+          <article class="card warning">
+            <h3>Warehouse</h3>
+            <p>Add granular SQL permissions for restricted access. Do not grant <code>ReadAll</code> when SQL restrictions must remain authoritative.</p>
+          </article>
+        </div>
+        <p class="muted">Avoid broad <code>ReadData</code> or <code>ReadAll</code> when selected objects are sufficient. Validate each connection path independently after permission changes propagate.</p>
+      </section>
+    </section>
+
+    <section class="panel" id="data-access" role="tabpanel" aria-labelledby="tab-data-access" hidden>
+      <div class="callout"><strong>External application scope:</strong> this section describes how applications outside Fabric, such as Palantir Foundry, custom services, ADLS Gen2-compatible clients, and SQL tools, authenticate and receive authorization to read Fabric data. Choose the Fabric item type first, then the connection method.</div>
+      <div class="callout warning"><strong>ABFS success does not prove SQL connectivity:</strong> ABFS and SQL can use the same service principal, but they are different client capabilities, token audiences, protocols, ports, endpoints, and authorization layers.</div>
+      <div class="grid-2 section-gap">
+        <article class="card accent">
+          <h3>Use ABFS when</h3>
+          <p>You need direct OneLake reads through an ADLS Gen2-compatible client. Least privilege must come from OneLake security roles where supported, or from broader OneLake item permissions such as <code>ReadAll</code>.</p>
+        </article>
+        <article class="card success">
+          <h3>Use SQL when</h3>
+          <p>You need Warehouse table access or SQL controls such as schema/table grants, row-level security, column permissions, views, procedures, or masking. Item <code>Read</code> enables connection; data still requires SQL authorization or inherited <code>ReadData</code>.</p>
+        </article>
+      </div>
+      <div class="grid-2 section-gap">
+        <article class="card accent">
+          <h2>ABFS / OneLake path</h2>
+          <div class="flow">
+            <div class="node"><strong>Token</strong><code>https://storage.azure.com/.default</code></div><div class="arrow">›</div><div class="node"><strong>Data</strong>OneLake DFS over HTTPS/TCP 443</div>
+          </div>
+          <p>Validates Entra client-credentials authentication for the storage audience, external OneLake tenant settings, and OneLake security roles or broad OneLake permissions.</p>
+          <p>It does not test a SQL Server driver, SQL-audience token acquisition, TDS routing, SQL endpoint item access, database selection, or SQL object grants.</p>
+        </article>
+        <article class="card success">
+          <h2>SQL endpoint path</h2>
+          <div class="flow">
+            <div class="node"><strong>Token</strong><code>https://database.windows.net/.default</code></div><div class="arrow">›</div><div class="node"><strong>Data</strong>MSSQL/TDS over TCP 1433</div>
+          </div>
+          <p>The SQL scope is an OAuth audience requested from Microsoft Entra; it is not a hostname to allowlist. Network traffic still goes to Entra over HTTPS/TCP 443 for the token and to the Fabric SQL endpoint over TCP 1433 for TDS.</p>
+          <p>Use a SQL Server JDBC/ODBC connector that explicitly supports Microsoft Entra service-principal authentication, encryption, the Fabric endpoint hostname, and the correct Warehouse or Lakehouse SQL database.</p>
+        </article>
+      </div>
+      <details class="info-pane section-gap">
+        <summary>Network and SQL failure diagnostics</summary>
+        <div class="diagnostic-facts">
+          <div class="diagnostic-fact"><strong>ABFS data:</strong> OneLake DFS over HTTPS/TCP 443.</div>
+          <div class="diagnostic-fact"><strong>SQL data:</strong> Fabric SQL endpoint over MSSQL/TDS/TCP 1433.</div>
+        </div>
+        <p><code>https://database.windows.net/.default</code> is the SQL OAuth audience requested from Microsoft Entra, not the SQL endpoint and not a network destination. Use SQL-aware FQDN rules when available; use <code>PowerBI</code> and <code>Sql</code> service tags only when the firewall is service-tag or IP-range based.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Symptom</th><th>Layer</th><th>Next check</th></tr></thead>
+            <tbody>
+              <tr><td>Timeout before login</td><td>Network</td><td>Test TCP 1433 to the Fabric SQL endpoint from the actual runtime; confirm TDS is not forced through an HTTPS-only proxy.</td></tr>
+              <tr><td>Driver, TLS, or auth-property error</td><td>Connector</td><td>Confirm SQL Server connector support for Entra service-principal authentication and encrypted TDS.</td></tr>
+              <tr><td>Login failed or token rejected</td><td>Authentication</td><td>Check app registration, secret validity, tenant, and SQL OAuth audience.</td></tr>
+              <tr><td>Cannot open database or item</td><td>Fabric item/catalog</td><td>Check item-level <code>Read</code> and the exact SQL database/initial catalog.</td></tr>
+              <tr><td>Query denied after connect</td><td>SQL authorization</td><td>Check schema/table <code>SELECT</code>, SQL roles, RLS, column permissions, and masking.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+      <nav class="subtabs" role="tablist" aria-label="Fabric item access methods">
+        <button class="subtab" role="tab" id="subtab-lakehouse" aria-controls="access-lakehouse" aria-selected="true">Lakehouse access methods</button>
+        <button class="subtab" role="tab" id="subtab-warehouse" aria-controls="access-warehouse" aria-selected="false">Warehouse access methods</button>
+      </nav>
+
+      <section class="access-panel" id="access-lakehouse" role="tabpanel" aria-labelledby="subtab-lakehouse">
+      <h2>Lakehouse access paths</h2>
+      <div class="grid-3">
+        <article class="card accent">
+          <h3>Direct ABFS from an external app</h3>
+          <div class="flow">
+            <div class="node"><strong>SP</strong>Storage-audience OAuth token</div><div class="arrow">›</div><div class="node"><strong>OneLake</strong>OneLake role authorizes table/files</div>
+          </div>
+          <p>SQL grants have no effect. They are SQL-engine permissions and are not converted to ADLS/OneLake storage permissions.</p>
+          <p class="muted">Tenant settings must permit service principals and external applications to use OneLake.</p>
+        </article>
+        <article class="card success warehouse-card">
+          <h3>SQL endpoint: User identity mode</h3>
+          <div class="flow">
+            <div class="node"><strong>SP</strong>Connect with item Read</div><div class="arrow">›</div><div class="node"><strong>OneLake</strong>SP identity + OneLake role</div>
+          </div>
+          <p>For tables, OneLake security is authoritative. Table-level SQL <code>GRANT</code>/<code>REVOKE</code> is ignored; SQL security remains available for views, procedures, and functions.</p>
+        </article>
+        <article class="card warning">
+          <h3>SQL endpoint: Delegated mode</h3>
+          <div class="flow">
+            <div class="node"><strong>SP</strong>SQL checks caller permissions</div><div class="arrow">›</div><div class="node"><strong>Owner</strong>Owner identity reads OneLake</div>
+          </div>
+          <p>OneLake roles for the caller do not govern table access. Grant SQL permissions explicitly:</p>
+          <pre>GRANT SELECT ON SCHEMA::[dmt]
+TO [service-principal-name];</pre>
+        </article>
+      </div>
+
+      <div class="callout success">
+        <strong>Least-privilege access:</strong>
+        <div><strong>Option 1:</strong> item <code>Read</code> + OneLake security + direct ABFS</div>
+        <div><strong>Option 2:</strong> item <code>Read</code> + OneLake security + SQL endpoint in User identity mode</div>
+        <div>Both options enforce the same caller identity at the data layer.</div>
+      </div>
+      </section>
+
+      <section class="access-panel" id="access-warehouse" role="tabpanel" aria-labelledby="subtab-warehouse" hidden>
+      <div class="grid-2">
+        <article class="card success">
+          <h2>Warehouse over SQL endpoint</h2>
+          <section class="sub-block" aria-labelledby="sql-least-privilege-heading">
+            <h3 id="sql-least-privilege-heading">Least privilege permissions setup</h3>
+            <ol class="steps">
+              <li>Do not assign a workspace role.</li>
+              <li>Grant item-level <strong>Read</strong> on the Warehouse. This enables SQL connection only.</li>
+              <li>Grant only the required SQL schema/table permissions.</li>
+            </ol>
+            <pre>GRANT SELECT ON SCHEMA::[required_schema]
+TO [service-principal-name];</pre>
+            <p>SQL permissions can provide object-, schema-, row-, and column-level controls within the TDS/SQL execution path.</p>
+          </section>
+          <details class="sub-block">
+            <summary>External runtime network requirements — expand to view</summary>
+            <ul>
+              <li>Allow outbound MSSQL/TDS traffic to the Fabric SQL endpoint hostname on TCP port <code>1433</code>.</li>
+              <li>Classify the traffic as Microsoft SQL Server <strong>MSSQL/TDS</strong>, not HTTPS.</li>
+              <li>If the firewall supports SQL-aware FQDN rules, an allow rule for the Fabric SQL endpoint on TCP 1433 can be sufficient.</li>
+              <li>If egress is controlled by Azure service tags or IP ranges instead, the documented <strong>PowerBI</strong> and <strong>Sql</strong> service tags are implementation options, not Fabric permissions.</li>
+              <li>Allow Microsoft Entra HTTPS endpoints required for service-principal token acquisition.</li>
+              <li>From the actual runtime, run <code>Test-NetConnection &lt;warehouse-endpoint&gt; -Port 1433</code>. A timeout indicates a network issue; a SQL/ODBC error means the TCP path is open.</li>
+            </ul>
+          </details>
+          <div class="sub-block integration-block">
+            <h3>External SQL integration</h3>
+            <p>Use Entra service-principal authentication and encrypted TDS on port 1433.</p>
+            <a class="button-link" href="warehouse_sql_endpoint_connection.html">Open SQL connection package</a>
+          </div>
+        </article>
+
+        <article class="card accent warehouse-card">
+          <h2>Warehouse over OneLake / ABFS</h2>
+          <section class="sub-block" aria-labelledby="abfs-least-privilege-heading">
+            <h3 id="abfs-least-privilege-heading">Least privilege permissions setup</h3>
+            <ol class="steps">
+              <li>Grant item <code>Read</code> for Warehouse discovery.</li>
+              <li>Grant item <code>ReadAll</code> for direct access to all Warehouse files.</li>
+              <li>For external clients, enable the tenant setting that permits external OneLake access.</li>
+              <li>Use the ABFSS path from Spark or the OneLake DFS endpoint from an ADLS Gen2-compatible client.</li>
+            </ol>
+            <pre>abfss://&lt;workspace&gt;@onelake.dfs.fabric.microsoft.com/&lt;warehouse&gt;/...</pre>
+            <div class="callout warning">The Microsoft Learn supported-item table does not currently list Fabric Warehouse for OneLake security roles (as of October 2026). There is no indication of a timeline for a future feature release as of now.</div>
+            <div class="callout critical danger-fill"><strong>Security boundary:</strong> <code>ReadAll</code> exposes all files in the Warehouse. For access restricted to selected schemas, tables, rows, or columns, use the SQL endpoint with granular SQL security instead.</div>
+          </section>
+          <div class="sub-block integration-block">
+            <h3>External ABFS integration</h3>
+            <p>Confirm that the external Delta reader supports Delta reader v3, managed file paths, and column mapping. The detailed Lakehouse/Warehouse evidence page is intentionally excluded from the public-safe site until screenshots and identifiers are sanitized.</p>
+          </div>
+        </article>
+      </div>
+      </section>
+    </section>
+
+    <section class="panel" id="matrix" role="tabpanel" aria-labelledby="tab-matrix">
+      <section class="simulator" aria-labelledby="simulator-title">
+        <h2 id="simulator-title">Permission behavior simulator</h2>
+        <p class="muted">Model an external application's effective access. Every section is required; select <strong>None</strong> when a permission type is intentionally absent.</p>
+        <form id="permission-simulator">
+          <div class="simulator-grid">
+            <fieldset>
+              <legend>Part 1 · Control plane and access path</legend>
+              <div class="field">
+                <span class="field-label">Control-plane model</span>
+                <div class="choices">
+                  <label class="choice"><input type="radio" name="controlModel" value="workspace"><span>Workspace role<small>Applies inherited permissions to every item in the workspace.</small></span></label>
+                  <label class="choice"><input type="radio" name="controlModel" value="item"><span>No workspace role + item permissions<small>Scopes control-plane access to one explicitly shared item.</small></span></label>
+                </div>
+              </div>
+              <div class="field conditional-field" id="workspace-role-field" hidden>
+                <label class="field-label" for="workspace-role">Workspace role</label>
+                <select id="workspace-role"><option value="">Select a role</option><option value="admin">Admin</option><option value="member">Member</option><option value="contributor">Contributor</option><option value="viewer">Viewer</option></select>
+              </div>
+              <div class="field conditional-field" id="item-permissions-field" hidden>
+                <span class="field-label">Item permissions (select one or more)</span>
+                <div class="choices">
+                  <label class="choice"><input type="checkbox" name="itemPermission" value="read"><span>Read (includes SQL CONNECT)<small>Item visibility and permission to connect to its SQL endpoint; no table data access by itself.</small></span></label>
+                  <label class="choice"><input type="checkbox" name="itemPermission" value="readdata"><span>ReadData<small>Broad SQL data read in delegated authorization.</small></span></label>
+                  <label class="choice"><input type="checkbox" name="itemPermission" value="readall"><span>ReadAll<small>Broad OneLake read through DefaultReader.</small></span></label>
+                  <label class="choice"><input type="checkbox" name="itemPermission" value="write"><span>Write<small>Broad item data read/write and modification capabilities.</small></span></label>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="target-item">Fabric item</label>
+                <select id="target-item"><option value="">Select an item</option><option value="lakehouse">Lakehouse</option><option value="warehouse">Warehouse</option></select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="access-method">Expected data access method</label>
+                <select id="access-method" disabled><option value="">Select the Fabric item first</option></select>
+              </div>
+              <div class="field conditional-field" id="lakehouse-mode-field" hidden>
+                <label class="field-label" for="lakehouse-mode">Lakehouse SQL data access mode</label>
+                <select id="lakehouse-mode"><option value="">Select a mode</option><option value="user">User identity</option><option value="delegated">Delegated identity</option></select>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Part 2 · Data-plane permissions</legend>
+              <div class="field">
+                <span class="field-label">SQL permissions (select all that apply)</span>
+                <div class="choices" id="sql-permissions">
+                  <label class="choice"><input type="checkbox" name="sqlPermission" value="none"><span>None</span></label>
+                  <label class="choice"><input type="checkbox" name="sqlPermission" value="select"><span>GRANT SELECT<small>Schema- or table-level read authorization.</small></span></label>
+                  <label class="choice"><input type="checkbox" name="sqlPermission" value="rls"><span>Row-level restriction on table<small>T-SQL security policy; does not itself grant SELECT.</small></span></label>
+                  <label class="choice"><input type="checkbox" name="sqlPermission" value="cls"><span>Column-scoped GRANT<small>Authorizes reads only for selected columns; it is not a masking policy.</small></span></label>
+                  <label class="choice"><input type="checkbox" name="sqlPermission" value="ddm"><span>Dynamic Data Masking<small>Masks query results; does not itself grant SELECT.</small></span></label>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="onelake-role">OneLake security role</label>
+                <select id="onelake-role"><option value="" selected disabled hidden>Select a role configuration</option><option value="none">None</option><option value="read-selected">Read on selected schemas/tables</option><option value="readwrite-selected">ReadWrite on selected schemas/tables</option></select>
+                <p class="field-disclaimer" id="onelake-role-disclaimer" hidden>OneLake security roles are not currently available for Warehouse, and this feature is not listed on the published roadmap.</p>
+              </div>
+            </fieldset>
+          </div>
+          <div class="simulate-row">
+            <button class="simulate-button" id="simulate-button" type="submit" disabled>Simulate access</button>
+            <span class="form-status" id="simulator-status">Complete all required selections.</span>
+          </div>
+        </form>
+        <section class="simulation-result" id="simulation-result" aria-live="polite" hidden></section>
+      </section>
+    </section>
+
+    <footer>Prepared from Microsoft Learn documentation current on 13 October 2026 and validated against the accompanying Fabric connectivity tests.</footer>
+  </main>
+
+  <script>
+    function bindTabs(tabs, panels) {
+      function activate(tab) {
+        tabs.forEach((candidate) => candidate.setAttribute("aria-selected", String(candidate === tab)));
+        panels.forEach((panel) => { panel.hidden = panel.id !== tab.getAttribute("aria-controls"); });
+        tab.focus();
+      }
+
+      tabs.forEach((tab, index) => {
+        tab.addEventListener("click", () => activate(tab));
+        tab.addEventListener("keydown", (event) => {
+          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+          event.preventDefault();
+          const offset = event.key === "ArrowRight" ? 1 : -1;
+          activate(tabs[(index + offset + tabs.length) % tabs.length]);
+        });
+      });
+    }
+
+    bindTabs(
+      [...document.querySelectorAll('main > .tabs > .tab')],
+      [...document.querySelectorAll('main > .panel')]
+    );
+    bindTabs(
+      [...document.querySelectorAll('#data-access > .subtabs > .subtab')],
+      [...document.querySelectorAll('#data-access > .access-panel')]
+    );
+    bindTabs(
+      [...document.querySelectorAll('#roles > .subtabs > .subtab')],
+      [...document.querySelectorAll('#roles > .control-panel')]
+    );
+
+    const simulator = document.querySelector('#permission-simulator');
+    const controlRadios = [...simulator.querySelectorAll('[name="controlModel"]')];
+    const workspaceRoleField = document.querySelector('#workspace-role-field');
+    const workspaceRole = document.querySelector('#workspace-role');
+    const itemPermissionsField = document.querySelector('#item-permissions-field');
+    const itemPermissionInputs = [...simulator.querySelectorAll('[name="itemPermission"]')];
+    const targetItem = document.querySelector('#target-item');
+    const accessMethod = document.querySelector('#access-method');
+    const lakehouseModeField = document.querySelector('#lakehouse-mode-field');
+    const lakehouseMode = document.querySelector('#lakehouse-mode');
+    const sqlPermissionInputs = [...simulator.querySelectorAll('[name="sqlPermission"]')];
+    const onelakeRole = document.querySelector('#onelake-role');
+    const onelakeRoleDisclaimer = document.querySelector('#onelake-role-disclaimer');
+    const simulateButton = document.querySelector('#simulate-button');
+    const simulatorStatus = document.querySelector('#simulator-status');
+    const simulationResult = document.querySelector('#simulation-result');
+
+    function checkedValues(inputs) {
+      return inputs.filter((input) => input.checked).map((input) => input.value);
+    }
+
+    function selectedControlModel() {
+      return controlRadios.find((input) => input.checked)?.value || "";
+    }
+
+    function updateOneLakeRoleAvailability() {
+      const warehouseSelected = targetItem.value === "warehouse";
+      const lakehouseDelegatedSql = accessMethod.value === "sql-lakehouse" && lakehouseMode.value === "delegated";
+      onelakeRole.disabled = warehouseSelected || lakehouseDelegatedSql;
+      onelakeRoleDisclaimer.hidden = !(warehouseSelected || lakehouseDelegatedSql);
+      onelakeRoleDisclaimer.textContent = warehouseSelected
+        ? "OneLake security roles are not currently available for Warehouse, and this feature is not listed on the published roadmap."
+        : "Lakehouse SQL Delegated mode uses SQL permissions for table authorization; OneLake roles are not used on this path.";
+      if (warehouseSelected || lakehouseDelegatedSql) onelakeRole.value = "";
+    }
+
+    function updateControlFields() {
+      const model = selectedControlModel();
+      workspaceRoleField.hidden = model !== "workspace";
+      itemPermissionsField.hidden = model !== "item";
+      if (model !== "workspace") workspaceRole.value = "";
+      if (model !== "item") itemPermissionInputs.forEach((input) => { input.checked = false; });
+      validateSimulator();
+    }
+
+    function updateAccessMethods() {
+      const methods = targetItem.value === "lakehouse"
+        ? [["", "Select a method"], ["abfs-lakehouse", "OneLake / ABFS (Lakehouse)"], ["sql-lakehouse", "SQL endpoint (Lakehouse)"]]
+        : targetItem.value === "warehouse"
+          ? [["", "Select a method"], ["abfs-warehouse", "OneLake / ABFS (Warehouse)"], ["sql-warehouse", "SQL endpoint (Warehouse)"]]
+          : [["", "Select the Fabric item first"]];
+      accessMethod.innerHTML = methods.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
+      accessMethod.disabled = !targetItem.value;
+      lakehouseMode.value = "";
+      lakehouseModeField.hidden = true;
+      updateOneLakeRoleAvailability();
+      validateSimulator();
+    }
+
+    function updateModeField() {
+      lakehouseModeField.hidden = accessMethod.value !== "sql-lakehouse";
+      if (lakehouseModeField.hidden) lakehouseMode.value = "";
+      updateOneLakeRoleAvailability();
+      validateSimulator();
+    }
+
+    function enforceNoneExclusivity(event) {
+      const changed = event.target;
+      if (changed.value === "none" && changed.checked) {
+        sqlPermissionInputs.forEach((input) => { if (input !== changed) input.checked = false; });
+      } else if (changed.checked) {
+        const none = sqlPermissionInputs.find((input) => input.value === "none");
+        none.checked = false;
+      }
+      validateSimulator();
+    }
+
+    function validateSimulator() {
+      const model = selectedControlModel();
+      const controlValid = model === "workspace" ? Boolean(workspaceRole.value) : model === "item" && checkedValues(itemPermissionInputs).length > 0;
+      const accessValid = Boolean(targetItem.value && accessMethod.value) && (accessMethod.value !== "sql-lakehouse" || Boolean(lakehouseMode.value));
+      const oneLakeRoleRelevant = targetItem.value === "lakehouse" && !(accessMethod.value === "sql-lakehouse" && lakehouseMode.value === "delegated");
+      const oneLakeRoleValid = !oneLakeRoleRelevant || Boolean(onelakeRole.value);
+      const dataPlaneValid = checkedValues(sqlPermissionInputs).length > 0 && oneLakeRoleValid;
+      const valid = controlValid && accessValid && dataPlaneValid;
+      simulateButton.disabled = !valid;
+      simulatorStatus.textContent = valid ? "Ready to simulate." : "Complete all required selections.";
+      if (!valid) simulationResult.hidden = true;
+      return valid;
+    }
+
+    function evaluateSimulation() {
+      const model = selectedControlModel();
+      const role = workspaceRole.value;
+      const itemPermissions = checkedValues(itemPermissionInputs);
+      const sqlPermissions = checkedValues(sqlPermissionInputs).filter((permission) => permission !== "none");
+      const sqlPermissionLabels = {
+        select: "GRANT SELECT",
+        rls: "row-level restriction",
+        cls: "column-scoped GRANT",
+        ddm: "Dynamic Data Masking"
+      };
+      const selectedSqlPermissionLabels = new Intl.ListFormat("en", { type: "conjunction" })
+        .format(sqlPermissions.map((permission) => sqlPermissionLabels[permission]));
+      const oneLakeSetting = onelakeRole.value;
+      const elevated = model === "workspace" && ["admin", "member", "contributor"].includes(role);
+      const viewer = model === "workspace" && role === "viewer";
+      const itemRead = itemPermissions.includes("read");
+      const itemReadData = itemPermissions.includes("readdata");
+      const itemReadAll = itemPermissions.includes("readall");
+      const itemWrite = itemPermissions.includes("write");
+      const seesItem = model === "workspace" || itemRead || itemWrite;
+      const endpointConnection = seesItem;
+      const oneLakeRoleConfigured = Boolean(oneLakeSetting && oneLakeSetting !== "none");
+      const oneLakeRoleUsable = targetItem.value === "lakehouse" && oneLakeRoleConfigured && (viewer || itemRead || elevated || itemWrite);
+      const broadOneLake = elevated || itemWrite || itemReadAll;
+      const broadSql = elevated || viewer || itemWrite || itemReadData;
+      const broadSqlSource = viewer
+        ? "Workspace Viewer grants ReadData"
+        : itemReadData
+          ? "Item ReadData grants broad SQL read access"
+          : elevated
+            ? "The elevated workspace role grants broad SQL access"
+            : "Item Write grants broad inherited SQL access";
+      const sqlSelect = sqlPermissions.includes("select");
+      const sqlColumnGrant = sqlPermissions.includes("cls");
+      const sqlAuthorizesRead = broadSql || sqlSelect || sqlColumnGrant;
+      const sqlRls = sqlPermissions.includes("rls");
+      const sqlDdm = sqlPermissions.includes("ddm");
+      const sqlDdmEnforced = sqlDdm && !elevated;
+      const effectiveSqlScope = () => {
+        const baseScope = broadSql
+          ? "Every SQL table and view"
+          : sqlColumnGrant && !sqlSelect
+            ? "Only the columns allowed by the column-scoped grant"
+            : "Only the tables or views covered by GRANT SELECT";
+        const protections = [
+          sqlRls ? "rows limited by RLS" : "",
+          sqlDdmEnforced ? "protected values shown masked" : ""
+        ].filter(Boolean);
+        return protections.length ? `${baseScope}; ${protections.join("; ")}` : baseScope;
+      };
+      const notes = [];
+      const addNote = (text, state = "warning") => notes.push({ text, state });
+      let connection = "Not applicable";
+      let dataAccess = "No data access";
+      let dataScope = "No tables, views, or files can be read";
+      let enforcement = "None";
+
+      if (accessMethod.value.startsWith("sql-")) {
+        connection = endpointConnection ? "SQL connection allowed" : "SQL connection rejected: item Read is missing";
+      } else {
+        connection = "Direct OneLake/ABFS path evaluated";
+      }
+
+      if (accessMethod.value === "abfs-lakehouse") {
+        enforcement = "OneLake permissions";
+        if (broadOneLake) {
+          dataAccess = "Data readable through ABFS";
+          dataScope = "Every Lakehouse table and file through OneLake/ABFS";
+        } else if (oneLakeRoleUsable) {
+          dataAccess = "Data readable through ABFS";
+          dataScope = "Only the schemas/tables allowed by the selected OneLake role";
+        }
+        if (sqlPermissions.length) addNote(`SQL permissions do not authorize or restrict direct ABFS reads. (${selectedSqlPermissionLabels} ${sqlPermissions.length === 1 ? "is" : "are"} redundant for this direct ABFS access path.)`, "danger");
+      }
+
+      if (accessMethod.value === "abfs-warehouse") {
+        enforcement = "No Warehouse data-plane permission";
+        connection = endpointConnection ? "Direct ABFS selected; item metadata only" : connection;
+        if (broadOneLake) {
+          enforcement = "Warehouse ReadAll / broad Fabric permission";
+          connection = "Direct OneLake/ABFS path evaluated";
+          dataAccess = "Data readable through ABFS";
+          dataScope = "Every file in the Warehouse item through OneLake/ABFS";
+          if (broadSql) addNote(`${broadSqlSource}, so the same principal also has broad Warehouse SQL read exposure.`, "danger");
+        } else if (broadSql) {
+          connection = "Direct ABFS selected; Warehouse SQL read path also available";
+          dataAccess = "Unrestricted Warehouse data exposure";
+          dataScope = `Every Warehouse SQL table and view through inherited access. ${broadSqlSource}; direct ABFS may still require ReadAll or another broad OneLake permission.`;
+          enforcement = "Inherited ReadData on the Warehouse SQL path";
+          addNote("The selected method is Warehouse OneLake/ABFS, but effective access must account for every path the principal can use. Workspace Viewer and ReadData-style grants can expose all Warehouse SQL tables and views even when direct ABFS file access is not the path that succeeds.", "danger");
+        } else if (endpointConnection && (sqlSelect || sqlColumnGrant)) {
+          connection = "Direct ABFS selected; Warehouse SQL read path also available";
+          dataAccess = "Warehouse data readable through SQL";
+          dataScope = effectiveSqlScope();
+          enforcement = "Explicit SQL permissions on the Warehouse SQL path";
+          addNote("The selected method is Warehouse OneLake/ABFS. Item Read plus SQL permissions does not authorize direct Warehouse file access, but the same principal can still read the granted Warehouse objects through the SQL endpoint.", "warning");
+        }
+        if (oneLakeRoleConfigured) addNote("Warehouse doesn't currently support configurable OneLake security roles; this selection has no effect.", "danger");
+        if (sqlPermissions.length && !broadSql && !(endpointConnection && (sqlSelect || sqlColumnGrant))) addNote(`SQL grants, RLS, column permissions, and masking are not enforced on direct Warehouse ABFS reads. (${selectedSqlPermissionLabels} ${sqlPermissions.length === 1 ? "is" : "are"} redundant for this direct ABFS access path.)`, "danger");
+        if (sqlPermissions.length && broadSql) addNote(`${selectedSqlPermissionLabels} cannot narrow the inherited broad Warehouse SQL read access. Remove Workspace Viewer, ReadData, Write, or elevated workspace roles before testing least privilege.`, "danger");
+        if (!broadOneLake && !broadSql && !sqlSelect && !sqlColumnGrant) addNote("Item Read lets the service principal discover the Warehouse and connect to its SQL endpoint, but it does not grant Warehouse table data, SQL SELECT, ReadData, ReadAll, or direct ABFS file access.", "success");
+      }
+
+      if (accessMethod.value === "sql-lakehouse" && endpointConnection) {
+        if (lakehouseMode.value === "user") {
+          enforcement = "OneLake security using the caller's identity";
+          if (broadOneLake) {
+            dataAccess = "Table data readable";
+            dataScope = "Every Lakehouse table available through the SQL endpoint";
+          } else if (oneLakeRoleUsable) {
+            dataAccess = "Table data readable";
+            dataScope = "Only the schemas/tables allowed by the selected OneLake role";
+          }
+          if (itemReadData && oneLakeRoleConfigured) addNote("The selected OneLake security role authorizes these Lakehouse tables. ReadData is redundant for table authorization in User identity mode and does not broaden or restrict this access.", "warning");
+          else if (itemReadData) addNote("ReadData is redundant for Lakehouse table authorization in User identity mode; no OneLake security role currently grants the caller table access.", "danger");
+          if (sqlPermissions.length) addNote(`${selectedSqlPermissionLabels} ${sqlPermissions.length === 1 ? "is" : "are"} redundant and bypassed for Lakehouse table authorization in User identity mode because OneLake security is authoritative.`, "danger");
+          if (!broadOneLake && !oneLakeRoleUsable) addNote("Recommendation: assign the caller to a OneLake security role scoped to the required schemas/tables. Keep item Read for SQL endpoint connection; ReadData and table-level SQL controls cannot grant Lakehouse table access in User identity mode.", "warning");
+          if (oneLakeSetting.startsWith("readwrite")) addNote("The OneLake role can permit writes through supported OneLake paths, but the Lakehouse SQL endpoint remains read-only.", "warning");
+        } else {
+          enforcement = "SQL permissions; the item owner reads OneLake";
+          if (sqlAuthorizesRead) {
+            dataAccess = "Table data readable";
+            dataScope = effectiveSqlScope();
+          }
+          if (oneLakeRoleConfigured && itemReadAll) {
+            addNote("The selected OneLake security role is unused for this Delegated identity SQL path because SQL permissions are authoritative. ReadAll also has no effect on this query, but it places the principal in DefaultReader and grants broad access through direct OneLake/ABFS or Lakehouse SQL User identity mode.", "warning");
+          } else if (oneLakeRoleConfigured) {
+            addNote("The selected OneLake security role is unused for this Delegated identity SQL path because SQL permissions are authoritative. The SQL GRANT remains the effective restriction.", "warning");
+          } else if (itemReadAll) {
+            addNote("ReadAll has no effect on this Delegated identity SQL query. It grants broad access through direct OneLake/ABFS or Lakehouse SQL User identity mode instead.", "warning");
+          }
+          if (!sqlAuthorizesRead && oneLakeRoleConfigured) addNote("Recommendation: grant SQL SELECT only on the required schemas/tables, or assign an equivalent custom SQL role. Delegated identity mode requires SQL authorization; the selected OneLake role cannot grant table access.", "warning");
+        }
+      }
+
+      if (accessMethod.value === "sql-warehouse" && endpointConnection) {
+        enforcement = "Warehouse SQL permissions";
+        if (sqlAuthorizesRead) {
+          dataAccess = "Warehouse data readable through SQL";
+          dataScope = effectiveSqlScope();
+        }
+        if (oneLakeRoleConfigured) addNote("Warehouse doesn't currently support configurable OneLake security roles; this selection has no effect.", "danger");
+      }
+
+      const sqlPoliciesApply = accessMethod.value === "sql-warehouse" || (accessMethod.value === "sql-lakehouse" && lakehouseMode.value === "delegated");
+      const sqlObjectScopeBroadened = (sqlSelect || sqlColumnGrant) && broadSql && sqlPoliciesApply;
+      const sqlMaskingBypassed = sqlDdm && elevated && sqlPoliciesApply;
+      if (sqlPoliciesApply && sqlAuthorizesRead) {
+        if (sqlRls) addNote("SQL row-level security filters the authorized query rows, including for workspace roles with broad SQL access.", "success");
+        if (sqlColumnGrant && !broadSql) addNote("The column-scoped SQL grant authorizes reads only for the selected columns.", "success");
+        if (sqlDdmEnforced) addNote("Dynamic Data Masking masks configured values in SQL query results.", "success");
+        if (sqlMaskingBypassed) addNote("The elevated workspace role has CONTROL, which includes UNMASK; Dynamic Data Masking does not hide values from this principal.", "danger");
+      } else if (sqlPoliciesApply && (sqlRls || sqlDdm)) {
+        addNote("RLS and Dynamic Data Masking constrain queries but don't grant SELECT; a read grant is still required.", "danger");
+      }
+
+      if (elevated) addNote("The workspace role supplies broad inherited access; narrower grants can't reduce it.", "warning");
+      const lakehouseOneLakePath = accessMethod.value === "abfs-lakehouse" || (accessMethod.value === "sql-lakehouse" && lakehouseMode.value === "user");
+      if (itemReadAll && lakehouseOneLakePath && oneLakeRoleConfigured) addNote("The selected OneLake security role is bypassed because ReadAll places the principal in DefaultReader, granting broad Lakehouse access on this OneLake-authorized path.", "danger");
+      else if (itemReadAll && lakehouseOneLakePath) addNote("ReadAll places the principal in DefaultReader, granting broad Lakehouse access on this OneLake-authorized path.", "warning");
+      if (itemReadAll && accessMethod.value === "abfs-warehouse") addNote("ReadAll grants broad access to all Warehouse files through this direct OneLake/ABFS path.", "warning");
+      if (itemReadAll && accessMethod.value === "sql-warehouse") addNote("ReadAll has no effect on this Warehouse SQL query; it grants broad access only through the Warehouse OneLake/ABFS path.", "warning");
+      if (itemWrite && oneLakeRoleConfigured && targetItem.value === "lakehouse") addNote("Item Write grants broad read and write access to the Lakehouse data. The selected narrower OneLake role is additive and cannot restrict that broader Write permission.", "danger");
+      if (sqlObjectScopeBroadened) {
+        const broadSqlSourceForGrant = viewer
+          ? "Workspace Viewer grants ReadData, which already authorizes all Warehouse SQL tables and views"
+          : itemReadData
+            ? "Item ReadData already authorizes all SQL tables and views"
+            : elevated
+              ? "The elevated workspace role grants broad SQL access"
+              : "Item Write grants broad inherited SQL access";
+        const narrowGrant = sqlSelect && sqlColumnGrant ? "GRANT SELECT and the column-scoped GRANT are" : sqlColumnGrant ? "The column-scoped GRANT is" : "The narrower GRANT SELECT is";
+        addNote(`${broadSqlSourceForGrant}. ${narrowGrant} additive and cannot restrict that broader permission.`, "danger");
+      }
+      if (!seesItem && accessMethod.value.startsWith("sql-")) addNote("SQL data permissions alone can't overcome missing Fabric item Read permission.", "danger");
+      if (!notes.length) addNote("The selected permissions are effective for this access path.", "success");
+
+      const hasDataAccess = dataAccess !== "No data access";
+      const connectionAllowed = !connection.includes("rejected");
+      const warehouseAbfsSqlPathAvailable = accessMethod.value === "abfs-warehouse" && endpointConnection && (broadSql || sqlSelect || sqlColumnGrant);
+      const sqlRestrictionsSelected = sqlPermissions.length > 0;
+      const oneLakeRestrictionSelected = oneLakeRoleConfigured;
+      const hasIntendedRestriction = sqlRestrictionsSelected || oneLakeRestrictionSelected;
+      const sqlRestrictionsIgnored = sqlRestrictionsSelected && (
+        (accessMethod.value.startsWith("abfs-") && !warehouseAbfsSqlPathAvailable) ||
+        (accessMethod.value === "sql-lakehouse" && lakehouseMode.value === "user")
+      );
+      const oneLakeRestrictionsIgnored = oneLakeRestrictionSelected && (
+        targetItem.value === "warehouse" ||
+        (accessMethod.value === "sql-lakehouse" && lakehouseMode.value === "delegated") ||
+        broadOneLake
+      );
+      const redundantOneLakeRestriction = oneLakeRestrictionsIgnored && sqlPoliciesApply && sqlAuthorizesRead && !broadSql;
+      const restrictionBypassed = sqlRestrictionsIgnored || sqlObjectScopeBroadened || sqlMaskingBypassed || (oneLakeRestrictionsIgnored && !redundantOneLakeRestriction);
+      const broadDataGranted = hasDataAccess && (/^(All|Every|Broad)\b/.test(dataScope));
+      let intendedRestriction = "Not specified — no granular data restriction was selected.";
+      let intendedRestrictionState = "warning";
+      const userIdentityAccessExpectedButMissing = !hasDataAccess &&
+        accessMethod.value === "sql-lakehouse" &&
+        lakehouseMode.value === "user" &&
+        (itemReadData || sqlRestrictionsSelected);
+      const delegatedAccessExpectedButMissing = !hasDataAccess &&
+        accessMethod.value === "sql-lakehouse" &&
+        lakehouseMode.value === "delegated" &&
+        oneLakeRoleConfigured &&
+        !sqlAuthorizesRead;
+
+      if (userIdentityAccessExpectedButMissing) {
+        intendedRestriction = "Not achieved — the selected SQL permissions cannot grant Lakehouse table access in User identity mode.";
+        intendedRestrictionState = "danger";
+      } else if (delegatedAccessExpectedButMissing) {
+        intendedRestriction = "Not achieved — Delegated identity mode requires a SQL read permission on the intended schemas/tables.";
+        intendedRestrictionState = "danger";
+      } else if (hasIntendedRestriction && !hasDataAccess) {
+        intendedRestriction = "Respected — no underlying data access is granted.";
+        intendedRestrictionState = "success";
+      } else if (restrictionBypassed && broadDataGranted) {
+        intendedRestriction = "Not respected — a selected restriction is bypassed and unintended broad/full data access is granted.";
+        intendedRestrictionState = "danger";
+      } else if (restrictionBypassed) {
+        intendedRestriction = "Not respected — at least one selected restriction is not enforced on this access path.";
+        intendedRestrictionState = "danger";
+      } else if (redundantOneLakeRestriction && sqlPermissions.length) {
+        intendedRestriction = `Respected — ${selectedSqlPermissionLabels} is enforced; the selected OneLake role is unused on this path.`;
+        intendedRestrictionState = "success";
+      } else if (hasIntendedRestriction) {
+        intendedRestriction = `Respected — selected restrictions are enforced by ${enforcement}.`;
+        intendedRestrictionState = "success";
+      }
+
+      return {
+        metadata: seesItem ? `Yes — ${targetItem.value === "lakehouse" ? "Lakehouse" : "Warehouse"} item metadata is visible.` : "No — item Read or workspace access is missing.",
+        metadataState: seesItem ? "success" : "danger",
+        connection,
+        connectionState: accessMethod.value.startsWith("sql-") ? (connectionAllowed ? "success" : "danger") : "warning",
+        dataAccess,
+        dataAccessState: hasDataAccess ? "success" : "danger",
+        dataScope,
+        dataScopeState: hasDataAccess ? "success" : "danger",
+        enforcement,
+        enforcementState: enforcement === "None" ? "danger" : "success",
+        intendedRestriction,
+        intendedRestrictionState,
+        notes
+      };
+    }
+
+    function renderSimulation(result) {
+      simulationResult.innerHTML = `
+        <h2>Simulated effective access</h2>
+        <div class="result-grid">
+          <div class="result-item ${result.metadataState}"><strong>Item metadata</strong>${result.metadata}</div>
+          <div class="result-item ${result.connectionState}"><strong>Connection/path</strong>${result.connection}</div>
+          <div class="result-item ${result.dataAccessState}"><strong>Underlying data</strong>${result.dataAccess}</div>
+          <div class="result-item ${result.dataScopeState}"><strong>Data the caller can actually read</strong>${result.dataScope}</div>
+          <div class="result-item ${result.enforcementState}"><strong>Authoritative enforcement</strong>${result.enforcement}</div>
+          <div class="result-item ${result.intendedRestrictionState}"><strong>Intended data restriction</strong>${result.intendedRestriction}</div>
+        </div>
+        <h3 class="section-gap">Why</h3>
+        <ul class="result-notes">${result.notes.map((note) => `<li class="${note.state}">${note.text}</li>`).join("")}</ul>`;
+      simulationResult.hidden = false;
+      simulationResult.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    controlRadios.forEach((input) => input.addEventListener("change", updateControlFields));
+    workspaceRole.addEventListener("change", validateSimulator);
+    itemPermissionInputs.forEach((input) => input.addEventListener("change", validateSimulator));
+    targetItem.addEventListener("change", updateAccessMethods);
+    accessMethod.addEventListener("change", updateModeField);
+    lakehouseMode.addEventListener("change", validateSimulator);
+    sqlPermissionInputs.forEach((input) => input.addEventListener("change", enforceNoneExclusivity));
+    onelakeRole.addEventListener("change", validateSimulator);
+    simulator.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (validateSimulator()) renderSimulation(evaluateSimulation());
+    });
+  </script>
+</body>
+</html>
