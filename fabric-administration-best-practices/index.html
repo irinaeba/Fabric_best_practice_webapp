@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microsoft Fabric Best Practices — Abu Dhabi Government</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+        <a href="index.html" class="logo">
+            <div class="logo-icon">DGE</div>
+            <div>
+                <div class="logo-text">Fabric Best Practices</div>
+                <div class="logo-subtitle">Abu Dhabi Government</div>
+            </div>
+        </a>
+        <div class="header-right">
+            <span class="header-badge">UAE Region</span>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <ul class="sidebar-nav">
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Getting Started</div>
+            </li>
+            <li><a href="index.html" class="sidebar-link active">
+                <span class="link-number">⌂</span> Overview
+            </a></li>
+
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Platform Setup</div>
+            </li>
+            <li><a href="pages/capacity-planning.html" class="sidebar-link">
+                <span class="link-number">1</span> Capacity & Licensing
+            </a></li>
+            <li><a href="pages/tenant-configuration.html" class="sidebar-link">
+                <span class="link-number">2</span> Tenant Configuration
+            </a></li>
+            <li><a href="pages/workspace-design.html" class="sidebar-link">
+                <span class="link-number">3</span> Workspace Design
+            </a></li>
+            <li><a href="pages/security-access.html" class="sidebar-link">
+                <span class="link-number">4</span> Security & Access
+            </a></li>
+
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Build & Deliver</div>
+            </li>
+            <li><a href="pages/data-architecture.html" class="sidebar-link">
+                <span class="link-number">5</span> Architecture & Naming
+            </a></li>
+            <li><a href="pages/cicd.html" class="sidebar-link">
+                <span class="link-number">6</span> CI/CD & Lifecycle
+            </a></li>
+
+            <li class="sidebar-section">
+                <div class="sidebar-section-title">Operate</div>
+            </li>
+            <li><a href="#" class="sidebar-link coming-soon">
+                <span class="link-number">7</span> Governance & Compliance
+            </a></li>
+            <li><a href="#" class="sidebar-link coming-soon">
+                <span class="link-number">8</span> Monitoring
+            </a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-content">
+            <!-- Hero -->
+            <div class="hero">
+                <div class="hero-badge">Abu Dhabi Government — UAE Region Only</div>
+                <h1>Microsoft Fabric<br>Best Practices Guide</h1>
+                <p>A practical onboarding guide for Abu Dhabi government data teams setting up Microsoft Fabric with UAE data sovereignty, security, and operational best practices.</p>
+            </div>
+
+            <!-- Context -->
+            <h2>Who is this for?</h2>
+            <p>This guide is designed for <strong>data teams in Abu Dhabi government entities</strong> who have provisioned a Microsoft Fabric capacity and need to:</p>
+            <ul>
+                <li>Configure the Fabric tenant for <strong>UAE data sovereignty</strong> requirements</li>
+                <li>Set up workspaces, security, and access controls</li>
+                <li>Design a data architecture with proper naming conventions</li>
+                <li>Implement CI/CD and lifecycle management</li>
+                <li>Establish governance standards for artefact creation</li>
+            </ul>
+
+            <div class="callout callout-danger">
+                <div class="callout-title">⚠ UAE Data Sovereignty</div>
+                <div class="callout-body">
+                    Several Fabric features process data outside the UAE region and <strong>must be disabled</strong> for government workloads. See <a href="pages/tenant-configuration.html">Section 2: Tenant Configuration</a> for the full list.
+                </div>
+            </div>
+
+            <!-- Sections -->
+            <h2>Guide Sections</h2>
+
+            <div class="card-grid">
+                <div class="card" style="opacity:0.5; pointer-events:none;">
+                    <div class="card-number">1</div>
+                    <div class="card-title">Capacity & Licensing</div>
+                    <div class="card-desc">Coming soon — Estimate the right SKU, plan Dev/Prod environments, and understand cost management.</div>
+                </div>
+
+                <div class="card" style="opacity:0.5; pointer-events:none;">
+                    <div class="card-number">2</div>
+                    <div class="card-title">Tenant Configuration</div>
+                    <div class="card-desc">Coming soon — UAE-specific settings: features to disable, admin roles, and delegation model.</div>
+                </div>
+
+                <div class="card" style="opacity:0.5; pointer-events:none;">
+                    <div class="card-number">3</div>
+                    <div class="card-title">Workspace Design</div>
+                    <div class="card-desc">Coming soon — Organize workspaces by function and domain. Reporting hub patterns and developer isolation.</div>
+                </div>
+
+                <div class="card" style="opacity:0.5; pointer-events:none;">
+                    <div class="card-number">4</div>
+                    <div class="card-title">Security & Access Control</div>
+                    <div class="card-desc">Coming soon — Network security, workspace roles, item permissions, OneLake security, gateways.</div>
+                </div>
+
+                <a href="pages/data-architecture.html" class="card">
+                    <div class="card-number">5</div>
+                    <div class="card-title">Architecture & Naming</div>
+                    <div class="card-desc">Lakehouse vs Warehouse, medallion layers, and the full DGE naming conventions standard.</div>
+                </a>
+
+                <a href="pages/cicd.html" class="card">
+                    <div class="card-number">6</div>
+                    <div class="card-title">CI/CD & Lifecycle</div>
+                    <div class="card-desc">Git integration, deployment options, branching strategy, and workspace modularity.</div>
+                </a>
+            </div>
+
+            <div class="card-grid">
+                <div class="card" style="opacity:0.5; pointer-events:none;">
+                    <div class="card-number">7</div>
+                    <div class="card-title">Governance & Compliance</div>
+                    <div class="card-desc">Coming soon — Sensitivity labels, DLP, endorsement, Purview integration.</div>
+                </div>
+
+                <div class="card" style="opacity:0.5; pointer-events:none;">
+                    <div class="card-number">8</div>
+                    <div class="card-title">Monitoring & Observability</div>
+                    <div class="card-desc">Coming soon — Capacity metrics, monitoring hub, audit logs, alerting.</div>
+                </div>
+            </div>
+
+            <!-- Key Principles -->
+            <h2>Key Principles</h2>
+            <div class="callout callout-info">
+                <div class="callout-title">ℹ Design Philosophy</div>
+                <div class="callout-body">
+                    <ul style="margin-left: 1rem;">
+                        <li><strong>UAE-first:</strong> All data processing stays within UAE. No exceptions for production workloads.</li>
+                        <li><strong>Least privilege:</strong> Grant minimum necessary permissions at every layer.</li>
+                        <li><strong>Modular workspaces:</strong> Separate by function to simplify CI/CD and security.</li>
+                        <li><strong>Consistent naming:</strong> Follow the DGE naming convention for all artefacts.</li>
+                        <li><strong>Automate delivery:</strong> Use Git + deployment pipelines for all promotions to production.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- References -->
+            <h2>Key References</h2>
+            <ul>
+                <li><a href="https://learn.microsoft.com/en-us/fabric/" target="_blank">Microsoft Fabric Documentation</a></li>
+                <li><a href="https://learn.microsoft.com/en-us/fabric/governance/governance-compliance-overview" target="_blank">Fabric Governance Overview</a></li>
+                <li><a href="https://learn.microsoft.com/en-us/fabric/security/security-overview" target="_blank">Fabric Security Overview</a></li>
+                <li><a href="https://medium.com/microsoftazure/thoughts-on-workspace-design-in-microsoft-fabric-f99f79ac6f32" target="_blank">Workspace Design in Fabric — Nicholas Hurt (Part 1)</a></li>
+                <li><a href="https://medium.com/@Nicholas_Hurt/thoughts-on-workspace-design-in-microsoft-fabric-part-3-optimizing-ci-cd-in-microsoft-fabric-a4823a432f62" target="_blank">Workspace Design for CI/CD — Nicholas Hurt (Part 3)</a></li>
+            </ul>
+        </div>
+    </main>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+    </script>
+</body>
+</html>
